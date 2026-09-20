@@ -1,0 +1,133 @@
+<!-- Dependency picker. Rendered by api_repo_class_roles / api_repo_class_roles_query / changeset_edit_item_deps. -->
+{% if not roles %}
+{% if no_version %}
+<p class="text-xs text-amber-600">
+    Could not find that repo class / version.
+</p>
+{% else %}
+<p class="text-xs text-gray-500">No dependencies declared for this version.</p>
+{% endif %}
+{% else %}
+<div class="space-y-3 border-t pt-3">
+    {% if no_version %}
+    <p class="text-xs text-amber-600">
+        Couldn't resolve this version's declared roles — showing the instance's current dependencies so you can edit them.
+    </p>
+    {% endif %}
+
+    {% for r in roles %}
+    <div x-data="{ source: '{{ r.initial_source|default:'draft' }}', removed: false }"
+         :class="removed ? 'opacity-60' : ''"
+         class="border {% if r.stale %}border-amber-200 bg-amber-50{% else %}border-gray-200 bg-gray-50{% endif %} rounded-md p-3">
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <span class="font-mono text-sm font-medium text-gray-900">{{ r.role }}</span>
+                {% if r.required %}
+                <span class="text-xs text-red-500 ml-1">*</span>
+                {% endif %}
+                {% if r.stale %}
+                <span class="text-xs text-amber-700 ml-1">(not declared by this version — kept)</span>
+                <p class="text-xs text-amber-700">
+                    Currently wired. Kept on save; pick a different target if needed.
+                </p>
+                {% elif r.is_resource %}
+                <p class="text-xs text-gray-500">
+                    Needs
+                    <span class="font-mono">{{ r.resource.resource_definition.resource_namespace }}/{{ r.resource.resource_definition.resource_definition_name }}</span>
+                    {% if r.resource.version_spec %}<span class="font-mono">{{ r.resource.version_spec }}</span>{% endif %}
+                    {% if r.resource.tag_selector %}<span class="text-gray-400">[{{ r.resource.tag_selector }}]</span>{% endif %}
+                </p>
+                {% else %}
+                <p class="text-xs text-gray-500">
+                    Needs an instance of <span class="font-mono">{{ r.compatible_class_name }}</span>
+                </p>
+                {% endif %}
+            </div>
+            <div class="text-xs flex items-center space-x-3">
+                <div x-show="!removed">
+                    <label class="mr-2">
+                        <input type="radio" :name="'src_{{ r.role }}'" value="draft" x-model="source"> In draft
+                    </label>
+                    <label>
+                        <input type="radio" :name="'src_{{ r.role }}'" value="bom" x-model="source"> From BOM
+                    </label>
+                </div>
+                {% if r.required %}
+                <span class="text-gray-400">required</span>
+                {% else %}
+                <button type="button" x-show="!removed" @click="removed = true"
+                        class="text-red-600 hover:text-red-800 hover:underline">Remove</button>
+                <span x-show="removed" class="flex items-center space-x-2" x-cloak>
+                    <span class="text-amber-700">Removed — dropped on save</span>
+                    <button type="button" @click="removed = false"
+                            class="text-ns-electric hover:underline">Undo</button>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- All dep_<role> inputs live in this fieldset; disabling it on remove
+             excludes them from the POST (including HTMX-injected BOM candidates),
+             so _parse_deps_from_post drops the role and it's removed on save. -->
+        <fieldset :disabled="removed" class="contents">
+
+        <!-- In-draft candidates -->
+        <div x-show="source === 'draft'">
+            {% if r.in_draft_candidates %}
+            <div class="space-y-1">
+                {% for cand in r.in_draft_candidates %}
+                <label class="flex items-center text-sm">
+                    <input type="checkbox" name="dep_{{ r.role }}" value="{{ cand }}"
+                           {% if cand in r.selected %}checked{% endif %}
+                           :disabled="source !== 'draft'"
+                           class="mr-2">
+                    <span class="font-mono">{{ cand }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs text-gray-500 italic">
+                No matching instances in this draft yet. Add one or pick from an environment's BOM.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- BOM picker -->
+        <div x-show="source === 'bom'" class="space-y-2">
+            {% for s in r.selected %}
+                {% if s and s not in r.in_draft_candidates %}
+                <input type="hidden" name="dep_{{ r.role }}" value="{{ s }}"
+                       :disabled="source !== 'bom'">
+                {% endif %}
+            {% endfor %}
+            {% if r.selected %}
+            <p class="text-xs text-gray-600">
+                Currently wired to: <span class="font-mono">{{ r.selected|join:", " }}</span>
+            </p>
+            {% endif %}
+            <select
+                   class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                   hx-get="{% url 'deployments:api_dep_candidates' draft_id=draft.pk %}"
+                   hx-trigger="change"
+                   hx-target="#dep-candidates-{{ picker_id|default:'add' }}-{{ forloop.counter }}"
+                   hx-include="this"
+                   {% if r.is_resource %}
+                   hx-vals='{"role": "{{ r.role|escapejs }}", "resource_namespace": "{{ r.resource.resource_definition.resource_namespace|escapejs }}", "resource_definition_name": "{{ r.resource.resource_definition.resource_definition_name|escapejs }}", "version": "{{ r.resource.resource_definition.version|escapejs }}", "version_spec": "{{ r.resource.version_spec|default:''|escapejs }}", "tags": "{{ r.resource.tag_selector|default:''|escapejs }}"}'
+                   {% else %}
+                   hx-vals='{"repo_class": "{{ r.compatible_class_name|escapejs }}", "role": "{{ r.role|escapejs }}"}'
+                   {% endif %}
+                   name="environment">
+                <option value="">Choose an environment…</option>
+                {% for env in environments %}
+                <option value="{{ env }}">{{ env }}</option>
+                {% endfor %}
+            </select>
+            <div id="dep-candidates-{{ picker_id|default:'add' }}-{{ forloop.counter }}" class="text-xs text-gray-500">
+                Choose an environment to load candidates.
+            </div>
+        </div>
+        </fieldset>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,165 @@
+{% load deployment_tags %}
+{% if not diff.only_in_source and not diff.only_in_target and not diff.modified %}
+<div class="bg-white rounded-lg shadow p-12 text-center">
+    <p class="text-gray-500">No differences between {{ from_env }} and {{ to_env }}.</p>
+</div>
+{% else %}
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-3 bg-gray-50 border-b text-sm text-gray-600 flex flex-wrap gap-2 items-center">
+        <span class="font-medium">Diff Summary ({{ from_env }} vs {{ to_env }}):</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+            {{ diff.only_in_source|length }} only in source
+        </span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+            {{ diff.only_in_target|length }} only in target
+        </span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+            {{ diff.modified|length }} modified
+        </span>
+    </div>
+
+    {% if diff.only_in_source %}
+    <section id="only-in-source" class="border-b">
+        <header class="px-6 py-3 bg-green-50 text-green-900 font-medium">
+            Only in source ({{ from_env }})
+        </header>
+        <div class="divide-y divide-gray-200">
+            {% for item in diff.only_in_source %}
+            <div class="px-6 py-3 flex items-center justify-between">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" name="selected" value="{{ item.repo_instance_name }}"
+                           class="rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta">
+                    <span class="font-medium text-gray-900">{{ item.repo_instance_name }}</span>
+                    <span class="text-sm text-gray-500">{{ item.repo_class_name }}</span>
+                    {% if item.repo_class_version %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700">
+                        v{{ item.repo_class_version }}
+                    </span>
+                    {% endif %}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if diff.only_in_target %}
+    <section id="only-in-target" class="border-b">
+        <header class="px-6 py-3 bg-red-50 text-red-900 font-medium">
+            Only in target ({{ to_env }})
+        </header>
+        <div class="divide-y divide-gray-200">
+            {% for item in diff.only_in_target %}
+            <div class="px-6 py-3">
+                <span class="font-medium text-gray-900">{{ item.repo_instance_name }}</span>
+                <span class="text-xs text-gray-500 ml-2">(would not be present in {{ from_env }})</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if diff.modified %}
+    <section id="modified">
+        <header class="px-6 py-3 bg-amber-50 text-amber-900 font-medium">
+            Modified
+        </header>
+        <div class="divide-y divide-gray-200">
+            {% for m in diff.modified %}
+            <div class="px-6 py-4" x-data="{ open: false }">
+                <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
+                    <label class="flex items-center space-x-3 cursor-pointer" @click.stop>
+                        <input type="checkbox" name="selected" value="{{ m.repo_instance_name }}"
+                               class="rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                            MODIFIED
+                        </span>
+                        <span class="font-medium text-gray-900">{{ m.repo_instance_name }}</span>
+                        <span class="text-sm text-gray-500">{{ m.repo_class_name }}</span>
+                        {% if m.version_change %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono bg-blue-50 text-blue-700 border border-blue-200">
+                            v{{ m.version_change.old }}
+                            <svg class="h-3 w-3 mx-1 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                            v{{ m.version_change.new }}
+                        </span>
+                        {% endif %}
+                    </label>
+                    <svg class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+
+                <div x-show="open" x-cloak class="mt-4 space-y-4">
+                    {% if m.config_diff %}
+                    <div>
+                        <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Configuration Changes</h4>
+                        <div class="bg-gray-50 rounded border text-xs font-mono">
+                            {% for key, value in m.config_diff.added.items %}
+                            <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
+                                <span class="text-green-800">+ {{ key }}</span>
+                                <span class="text-green-600">{{ value }}</span>
+                            </div>
+                            {% endfor %}
+                            {% for key, value in m.config_diff.removed.items %}
+                            <div class="px-3 py-1.5 bg-red-50 border-l-2 border-red-400 flex justify-between">
+                                <span class="text-red-800">- {{ key }}</span>
+                                <span class="text-red-600">{{ value }}</span>
+                            </div>
+                            {% endfor %}
+                            {% for key, change in m.config_diff.changed.items %}
+                            <div class="px-3 py-1.5 bg-amber-50 border-l-2 border-amber-400">
+                                <span class="text-amber-800">~ {{ key }}</span>
+                                <div class="ml-4 mt-0.5 text-gray-500">
+                                    <span class="text-red-600 line-through">{{ change.old }}</span>
+                                    <svg class="inline h-3 w-3 mx-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                    <span class="text-green-600">{{ change.new }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if m.dependency_diff %}
+                    <div>
+                        <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Dependency Changes</h4>
+                        <div class="bg-gray-50 rounded border text-xs font-mono">
+                            {% for role, target in m.dependency_diff.added.items %}
+                            <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
+                                <span class="text-green-800">+ {{ role }}</span>
+                                <span class="text-green-600">{{ target|dep_display }}</span>
+                            </div>
+                            {% endfor %}
+                            {% for role, target in m.dependency_diff.removed.items %}
+                            <div class="px-3 py-1.5 bg-red-50 border-l-2 border-red-400 flex justify-between">
+                                <span class="text-red-800">- {{ role }}</span>
+                                <span class="text-red-600">{{ target|dep_display }}</span>
+                            </div>
+                            {% endfor %}
+                            {% for role, change in m.dependency_diff.changed.items %}
+                            <div class="px-3 py-1.5 bg-amber-50 border-l-2 border-amber-400">
+                                <span class="text-amber-800">~ {{ role }}</span>
+                                <div class="ml-4 mt-0.5 text-gray-500">
+                                    <span class="text-red-600">{{ change.old|dep_display }}</span>
+                                    <svg class="inline h-3 w-3 mx-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                    <span class="text-green-600">{{ change.new|dep_display }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endif %}

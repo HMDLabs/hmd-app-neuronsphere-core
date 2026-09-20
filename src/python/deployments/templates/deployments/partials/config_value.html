@@ -1,0 +1,38 @@
+{% load deployment_tags %}
+{% with kind=value|value_kind depth=depth|default:0 %}
+{% if depth >= 6 %}
+<span class="font-mono text-xs text-gray-400 italic">{{ value }}</span>
+{% elif kind == "dict" %}
+{% if value %}
+<div class="space-y-1">
+    {% for key, val in value.items %}
+    <div class="flex gap-2 items-start">
+        <span class="font-mono text-xs text-gray-500 shrink-0">{{ key }}:</span>
+        <div class="min-w-0 flex-1 border-l-2 border-gray-200 pl-2">
+            {% include "deployments/partials/config_value.html" with value=val depth=depth|add:1 %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<span class="font-mono text-xs text-gray-400 italic">{}</span>
+{% endif %}
+{% elif kind == "list" %}
+{% if value %}
+<div class="space-y-1">
+    {% for item in value %}
+    <div class="flex gap-2 items-start">
+        <span class="font-mono text-xs text-gray-400 shrink-0">-</span>
+        <div class="min-w-0 flex-1 border-l-2 border-gray-200 pl-2">
+            {% include "deployments/partials/config_value.html" with value=item depth=depth|add:1 %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<span class="font-mono text-xs text-gray-400 italic">[]</span>
+{% endif %}
+{% else %}
+<span class="font-mono text-xs text-gray-800">{{ value }}</span>
+{% endif %}
+{% endwith %}

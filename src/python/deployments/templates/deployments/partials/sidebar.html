@@ -1,0 +1,103 @@
+{% load extension_slots %}
+{% load deployment_tags %}
+<!-- Sidebar Navigation -->
+<aside class="bg-ns-navy text-ns-lavender flex-shrink-0 overflow-y-auto transition-all duration-200"
+       :class="sidebarOpen ? 'w-64' : 'w-14'"
+       x-cloak>
+    <nav class="py-4">
+        <!-- Dashboard -->
+        <a href="{% url 'deployments:dashboard' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'dashboard' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Dashboard' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Dashboard</span>
+        </a>
+
+        <!-- Environments Section -->
+        <div class="mt-2" x-data="{ envsOpen: {% if active_section == 'environments' %}true{% else %}false{% endif %} }">
+            <button @click="envsOpen = !envsOpen"
+                    class="w-full flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                           {% if active_section == 'environments' %}text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+                    :title="!sidebarOpen ? 'Environments' : ''">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+                </svg>
+                <span class="ml-3 flex-1 text-left whitespace-nowrap" x-show="sidebarOpen" x-transition>Environments</span>
+                <svg x-show="sidebarOpen" class="w-4 h-4 transition-transform" :class="envsOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+
+            <!-- Environment List (collapsed when sidebar is collapsed) -->
+            <div x-show="envsOpen && sidebarOpen" x-transition class="ml-4">
+                <a href="{% url 'deployments:environment_list' %}"
+                   class="flex items-center px-4 py-1.5 text-sm transition-colors hover:text-ns-electric">
+                    <span class="text-xs text-ns-lavender opacity-60">All Environments</span>
+                </a>
+                {% for env in sidebar_environments %}
+                <a href="{% url 'deployments:bom_list' env %}"
+                   class="flex items-center px-4 py-1.5 text-sm transition-colors
+                          {% if active_environment == env %}text-ns-electric font-semibold{% else %}hover:text-ns-electric{% endif %}">
+                    <span class="w-2 h-2 rounded-full mr-2 flex-shrink-0 {{ env|env_dot_color }}"></span>
+                    <span class="capitalize">{{ env }}</span>
+                </a>
+                {% empty %}
+                <p class="px-4 py-1.5 text-xs text-ns-lavender opacity-60 leading-snug">
+                    None available. Ask an admin for Okta group access.
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Change Sets -->
+        <a href="{% url 'deployments:changeset_list' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors mt-1
+                  {% if active_section == 'changesets' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Change Sets' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Change Sets</span>
+        </a>
+
+        {% extension_slot "sidebar_nav" %}
+
+        <!-- Repo Classes -->
+        <a href="{% url 'deployments:repo_class_list' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'repo_classes' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Repo Classes' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Repo Classes</span>
+        </a>
+
+        <!-- Resource Definitions -->
+        <a href="{% url 'deployments:resource_definition_list' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'resources' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Resources' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Resources</span>
+        </a>
+        {% if active_section == 'resources' %}
+        <div class="ml-9 mb-1 space-y-1" x-show="sidebarOpen" x-transition>
+            <a href="{% url 'deployments:resource_definition_list' %}"
+               class="block text-xs py-1 {% if request.path == '/resources/definitions/' %}text-ns-electric{% else %}text-gray-300 hover:text-ns-electric{% endif %}">Definitions</a>
+            <a href="{% url 'deployments:resource_list' %}"
+               class="block text-xs py-1 {% if request.path == '/resources/' %}text-ns-electric{% else %}text-gray-300 hover:text-ns-electric{% endif %}">Resources</a>
+        </div>
+        {% endif %}
+    </nav>
+</aside>

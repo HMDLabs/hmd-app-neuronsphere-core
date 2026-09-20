@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Create ChangeSet - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <nav class="text-sm text-gray-500 mb-2">
+            <a href="{% url 'deployments:changeset_list' %}" class="hover:text-gray-700">Change Sets</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Create ChangeSet</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Create ChangeSet</h1>
+        <p class="text-gray-600 mt-1">
+            A ChangeSet is a portable bundle of instance definitions. Pick a DeploymentSet at apply time.
+        </p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {% if copy_params.copy_instance %}
+            <input type="hidden" name="copy_instance" value="{{ copy_params.copy_instance }}">
+            <input type="hidden" name="copy_class" value="{{ copy_params.copy_class }}">
+            <input type="hidden" name="copy_version" value="{{ copy_params.copy_version }}">
+            <input type="hidden" name="copy_deployment_id" value="{{ copy_params.copy_deployment_id }}">
+            <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p class="text-sm text-blue-700">
+                    Copying instance <span class="font-mono font-medium">{{ copy_params.copy_instance }}</span>
+                    ({{ copy_params.copy_class }} @ v{{ copy_params.copy_version }}).
+                    Create a ChangeSet to add it to.
+                </p>
+            </div>
+            {% endif %}
+
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                    ChangeSet Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="name" id="name"
+                       required
+                       placeholder="e.g., private-ca-bootstrap"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-magenta focus:border-ns-magenta">
+                <p class="mt-1 text-sm text-gray-500">A unique identifier for this ChangeSet</p>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <a href="{% url 'deployments:changeset_list' %}"
+                   class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 bg-ns-magenta text-white rounded-md hover:bg-ns-navy">
+                    Create ChangeSet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

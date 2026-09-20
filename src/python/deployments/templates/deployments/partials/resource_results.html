@@ -1,0 +1,58 @@
+<!-- Resource search results (tag / selector). Fields beyond resource_name are
+     optional — the raw find_resources_by_* endpoints omit definition/tags. -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    {% if resources %}
+    <ul class="divide-y divide-gray-200">
+        {% for r in resources %}
+        <li class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <span class="font-mono text-sm font-medium text-gray-900">{{ r.resource_name|default:r.identifier|default:"(unnamed)" }}</span>
+                {% if r.resource_definition %}
+                <span class="text-xs text-gray-500 font-mono">
+                    {{ r.resource_definition.resource_namespace }}/{{ r.resource_definition.resource_definition_name }}@{{ r.resource_definition.version }}
+                </span>
+                {% endif %}
+            </div>
+            {% if r.tags %}
+            <div class="mt-1 flex flex-wrap gap-1">
+                {% for t in r.tags %}
+                <span class="text-xs bg-gray-100 rounded px-2 py-0.5 font-mono">{{ t.key }}={{ t.value }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if r.output %}
+            <details class="mt-2">
+                <summary class="cursor-pointer text-xs text-ns-electric">Output</summary>
+                <pre class="mt-1 bg-gray-50 rounded-md p-2 text-xs overflow-x-auto">{{ r.output|pprint }}</pre>
+            </details>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-6 py-12 text-center text-gray-500">
+        <p>No resources match this query.</p>
+    </div>
+    {% endif %}
+
+    {% if pagination and pagination.num_pages > 1 %}
+    <div class="flex items-center justify-between border-t border-gray-200 px-6 py-3 text-sm text-gray-600">
+        <span>Showing {{ pagination.start }}–{{ pagination.end }} of {{ pagination.total }}</span>
+        <div class="flex items-center gap-2">
+            {% if pagination.has_prev %}
+            <a href="?environment={{ environment|urlencode }}&page={{ pagination.page|add:'-1' }}"
+               class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
+            {% else %}
+            <span class="px-3 py-1 border border-gray-200 rounded-md text-gray-300 cursor-default">Previous</span>
+            {% endif %}
+            <span class="text-gray-500">Page {{ pagination.page }} of {{ pagination.num_pages }}</span>
+            {% if pagination.has_next %}
+            <a href="?environment={{ environment|urlencode }}&page={{ pagination.page|add:'1' }}"
+               class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
+            {% else %}
+            <span class="px-3 py-1 border border-gray-200 rounded-md text-gray-300 cursor-default">Next</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>

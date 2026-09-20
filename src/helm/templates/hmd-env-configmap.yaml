@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hmd-environment-configmap
+data:
+  HMD_ENVIRONMENT: {{ .Values.env.HMD_ENVIRONMENT }}
+  HMD_DID: {{ .Values.env.HMD_DID }}
+  HMD_REGION: {{ .Values.env.HMD_REGION }}
+  HMD_CUSTOMER_CODE: {{ .Values.env.HMD_CUSTOMER_CODE }}
+  HMD_REPO_NAME: {{ .Values.env.HMD_REPO_NAME }}
+  HMD_REPO_VERSION: "{{ .Values.env.HMD_REPO_VERSION }}"
+  HMD_INSTANCE_NAME: {{ .Values.env.HMD_INSTANCE_NAME }}

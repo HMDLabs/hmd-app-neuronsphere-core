@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load allauth account %}
+
+{% block title %}Sign Out - NeuronSphere{% endblock %}
+
+{% block unauth_content %}
+<div class="flex items-center justify-center py-16">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-lg shadow-lg px-8 py-10 text-center">
+            <h1 class="font-heading text-3xl tracking-wide text-ns-navy">
+                NeuronSphere
+            </h1>
+            <p class="mt-4 text-gray-600">Are you sure you want to sign out?</p>
+
+            <form method="post" action="{% url 'account_logout' %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="mt-6 w-full px-4 py-2 bg-ns-magenta text-white rounded-md hover:bg-ns-navy transition-colors font-semibold">
+                    Sign Out
+                </button>
+            </form>
+
+            <a href="{% url 'deployments:dashboard' %}"
+               class="mt-3 inline-block text-sm text-ns-magenta hover:text-ns-navy font-semibold transition-colors">
+                Cancel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

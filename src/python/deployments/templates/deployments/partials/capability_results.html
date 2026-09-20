@@ -1,0 +1,91 @@
+{% load deployment_tags %}
+{# HTMX partial for the "Find by capability" form on the Repo Classes page. #}
+{% if error %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-sm">
+    <p>{{ error }}</p>
+</div>
+{% elif not searched %}
+<p class="text-sm text-gray-500">Type what you need done, or pick a capability kind, to search every repo class's declared capabilities.</p>
+{% elif not rows and not summary_only %}
+<div class="px-6 py-8 text-center text-gray-500">
+    <p>No capabilities matched{% if q %} &ldquo;{{ q }}&rdquo;{% endif %}{% if kind %} of kind <code class="font-mono">{{ kind }}</code>{% endif %}.</p>
+    <p class="text-sm mt-1">Every word must appear in a summary, capability, or entry point. Try fewer or broader words.</p>
+</div>
+{% else %}
+<div class="space-y-4">
+    {% if rows %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repo Class</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capability</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kind</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for row in rows %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                        <a href="{% url 'deployments:repo_class_detail' row.repo_class_name %}"
+                           class="font-medium text-ns-electric hover:underline">{{ row.repo_class_name }}</a>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                        {% if row.version %}
+                        <a href="{% url 'deployments:repo_class_version_detail' row.repo_class_name row.version %}"
+                           class="text-ns-electric hover:underline">{{ row.version }}</a>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-sm font-mono text-gray-800 align-top">{{ row.name }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap align-top">
+                        <span class="px-2 py-0.5 text-xs rounded-full border {{ row.kind|capability_kind_badge }}">{{ row.kind }}</span>
+                    </td>
+                    <td class="px-4 py-2 text-sm text-gray-600 align-top">{{ row.description }}</td>
+                    <td class="px-4 py-2 text-xs font-mono text-gray-500 align-top">{% if row.location %}<code>{{ row.location }}</code>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if summary_only %}
+    <div>
+        <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Also matched by summary</h3>
+        <ul class="divide-y divide-gray-100 text-sm">
+            {% for rc in summary_only %}
+            <li class="py-2">
+                <a href="{% url 'deployments:repo_class_detail' rc.repo_class_name %}"
+                   class="font-medium text-ns-electric hover:underline">{{ rc.repo_class_name }}</a>
+                {% if rc.version %}<span class="text-gray-400 ml-1">{{ rc.version }}</span>{% endif %}
+                <span class="text-gray-600 ml-2">{{ rc.summary|truncatechars:160 }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if has_previous or has_next %}
+    <div class="flex justify-between items-center text-sm text-gray-700 pt-2 border-t">
+        <span>{{ total }} matching repo class{{ total|pluralize:"es" }} &middot; page {{ page }}</span>
+        <div class="flex space-x-2">
+            {% if has_previous %}
+            <button type="button"
+                    hx-get="{% url 'deployments:capability_search' %}?q={{ q|urlencode }}&kind={{ kind|urlencode }}&page={{ page|add:'-1' }}"
+                    hx-target="#capability-results"
+                    class="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
+            {% endif %}
+            {% if has_next %}
+            <button type="button"
+                    hx-get="{% url 'deployments:capability_search' %}?q={{ q|urlencode }}&kind={{ kind|urlencode }}&page={{ page|add:'1' }}"
+                    hx-target="#capability-results"
+                    class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,61 @@
+{% comment %}
+Instance editor. Rendered by changeset_edit_item_instance into the per-item form
+in changeset_items.html, whose <li> x-data supplies `v` (the selected version,
+seeded from the item's current version) and `vq`.
+
+The version control mirrors the "Add Instance" picker in changeset_draft.html:
+a hidden input carries the value, a search box loads one page of versions at a
+time, and results land in a scoped container. Element ids are suffixed with the
+item index so several open panels do not fight over the same ids.
+
+The hidden input starts pre-seeded with the item's current version -- both as a
+`value` attribute and via `v` -- so saving without touching the list is a no-op
+for the version, and the current version never has to appear in the fetched page.
+
+The repo class is fixed here (it cannot be changed from this panel), so it rides
+in the hx-get query string; htmx appends the search box's own `version_q` value
+to it. That keeps the picker self-contained: no hx-include of [name=...]
+selectors, which would reach into every other open panel and the Add form.
+{% endcomment %}
+<div class="space-y-3 border-t pt-3">
+    <div class="text-xs text-gray-500">
+        Editing <span class="font-mono text-gray-700">{{ item.repo_instance_name }}</span>
+        (<span class="font-mono">{{ item.repo_class_name }}</span>).
+        To change the instance name or repo class, remove and re-add.
+    </div>
+
+    <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Version</label>
+        <input type="hidden" name="version" id="{{ input_id }}" x-model="v"
+               value="{{ item.repo_class_version }}">
+        <input type="search" name="version_q" x-model="vq"
+               autocomplete="off"
+               placeholder="Search versions…"
+               hx-get="{% url 'deployments:api_repo_class_versions_options' %}?repo_class={{ item.repo_class_name|urlencode }}&amp;item_index={{ index }}"
+               hx-trigger="load, input changed delay:300ms, search"
+               hx-target="#{{ results_id }}"
+               hx-swap="innerHTML"
+               class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+        <p class="mt-1 text-xs text-gray-500" x-show="v" x-cloak>
+            Selected: <span class="font-mono text-gray-700" x-text="v"></span>
+        </p>
+        <div id="{{ results_id }}"
+             class="mt-1 border border-gray-200 rounded-md max-h-56 overflow-y-auto empty:hidden">
+            <p class="text-sm text-gray-500 px-3 py-2">Loading versions…</p>
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Deployment ID</label>
+        <input type="text" name="deployment_id"
+               value="{{ item.deployment_id }}"
+               class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+    </div>
+
+    <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Configuration (JSON)</label>
+        <textarea name="instance_configuration" rows="6"
+                  placeholder="{}"
+                  class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm font-mono">{{ configuration_json }}</textarea>
+    </div>
+</div>

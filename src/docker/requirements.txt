@@ -1,0 +1,39 @@
+# Django core
+Django>=5.0,<5.1
+gunicorn>=21.2.0
+whitenoise>=6.6.0
+
+# Database
+psycopg2-binary>=2.9.9
+
+# Authentication
+django-allauth>=0.61.0
+
+# HTMX integration
+django-htmx>=1.17.0
+
+# HTTP client for API calls
+httpx>=0.27.0
+
+# Logging
+python-json-logger>=2.0.7
+
+# HTTP client (explicit - required by django-allauth)
+requests>=2.31.0
+
+# JWT support (required by django-allauth OpenID Connect provider)
+PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# Redis cache backend
+django-redis>=5.4.0
+
+# MCP server mounted at /mcp (ns_mcp/) and the ASGI worker that serves it.
+# Django is served through uvicorn under gunicorn so the MCP app can share the
+# same process; see deployment_gui/asgi.py.
+fastmcp>=3.4,<4
+uvicorn[standard]>=0.30
+uvicorn-worker>=0.3
+
+# Present in src/python/requirements.txt but previously missing here
+python-dotenv>=1.0.0

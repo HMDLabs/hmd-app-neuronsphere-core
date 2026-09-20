@@ -1,0 +1,8 @@
+<div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+    <p class="text-red-700">Failed to load BOM data. The deployment service may be temporarily unavailable.</p>
+    <button hx-get="{% url 'deployments:bom_table' environment %}"
+            hx-target="#bom-table"
+            class="mt-3 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
+        Retry
+    </button>
+</div>

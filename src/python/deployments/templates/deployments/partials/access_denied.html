@@ -1,0 +1,9 @@
+<!-- Access denial sized for an HTMX target. The full-page access_denied.html
+     extends base.html, which would nest a whole document inside a panel. -->
+<div class="rounded-md border border-red-200 bg-red-50 p-3">
+    <p class="text-sm font-medium text-red-800">Access denied</p>
+    <p class="mt-1 text-xs text-red-700">
+        You don't have {{ role_required }} access to
+        <span class="font-mono">{{ environment }}</span>.
+    </p>
+</div>

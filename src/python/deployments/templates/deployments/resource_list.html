@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Resources - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Resources</h1>
+        <p class="text-gray-600 mt-1">Deployed resources for the selected environment — filter by tag (optional)</p>
+    </div>
+
+    <!-- Environment picker + optional tag filter (one form so both submit together) -->
+    <div class="bg-white rounded-lg shadow p-4 space-y-4">
+        <form method="get" class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Environment</label>
+                <select name="environment"
+                        class="border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+                    <option value="">-- select --</option>
+                    {% for env in environments %}
+                    <option value="{{ env }}" {% if env == environment %}selected{% endif %}>{{ env }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Tag key</label>
+                <input type="text" name="key" value="{{ key }}" placeholder="tier"
+                       class="border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Tag value</label>
+                <input type="text" name="value" value="{{ value }}" placeholder="prod"
+                       class="border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            </div>
+            <div class="flex-1 min-w-[16rem]">
+                <label class="block text-xs text-gray-500 mb-1">Or selector (key=value,key=value — AND)</label>
+                <input type="text" name="tags" value="{{ tags }}" placeholder="tier=prod,region=us-west-2"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">
+                View
+            </button>
+        </form>
+        <p class="text-xs text-gray-400">Select an environment to list its resources; tags optionally narrow within it. A selector takes precedence over a single key/value pair.</p>
+    </div>
+
+    {% if error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <p>Unable to load resources: {{ error }}</p>
+    </div>
+    {% endif %}
+
+    {% if environment and not error %}
+    {% include "deployments/partials/resource_results.html" %}
+    {% elif not environment %}
+    <div class="bg-white rounded-lg shadow px-6 py-12 text-center text-gray-500">
+        <p>Select an environment above to view its deployed resources.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

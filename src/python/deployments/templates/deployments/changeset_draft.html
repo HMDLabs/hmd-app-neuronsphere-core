@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load extension_slots %}
+
+{% block title %}{{ draft.name }} - ChangeSet Draft - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ showApplyModal: false }">
+    <!-- Header -->
+    <div class="flex justify-between items-start">
+        <div>
+            <nav class="text-sm text-gray-500 mb-2">
+                <a href="{% url 'deployments:changeset_list' %}" class="hover:text-gray-700">Change Sets</a>
+                <span class="mx-2">/</span>
+                <span class="text-gray-900">{{ draft.name }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {{ draft.name }}
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium align-middle
+                    {% if draft.status == 'draft' %}bg-gray-100 text-gray-700
+                    {% elif draft.status == 'in_review' %}bg-blue-100 text-blue-800
+                    {% elif draft.status == 'accepted' %}bg-green-100 text-green-800
+                    {% elif draft.status == 'rejected' %}bg-red-100 text-red-800
+                    {% endif %}">
+                    {{ draft.get_status_display }}
+                </span>
+            </h1>
+            {% extension_slot "changeset_applications" %}
+        </div>
+        <div class="flex space-x-3">
+            <form method="post" action="{% url 'deployments:changeset_clone' draft_id=draft.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+                    Clone
+                </button>
+            </form>
+            <a href="{% url 'deployments:changeset_create' %}"
+               class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+                New ChangeSet
+            </a>
+            {% include "deployments/partials/changeset_header_actions.html" %}
+        </div>
+    </div>
+
+    {% if draft.status == 'rejected' and draft.rejection_reason %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start">
+            <svg class="h-5 w-5 text-red-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <div class="flex-1">
+                <h3 class="text-sm font-medium text-red-800">ChangeSet Rejected</h3>
+                <p class="mt-1 text-sm text-red-700">{{ draft.rejection_reason }}</p>
+            </div>
+            <form method="post" action="{% url 'deployments:changeset_reopen' draft_id=draft.pk %}" class="ml-4">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200">
+                    Reopen
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Add Form + Optional Search -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Add Item Form (creation-first) -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Add Instance</h2>
+                <form hx-post="{% url 'deployments:changeset_add_item' draft_id=draft.pk %}"
+                      hx-target="#changeset-items"
+                      hx-swap="innerHTML"
+                      class="space-y-4"
+                      x-data="{ rc: '{{ copy_params.copy_class|default:''|escapejs }}', v: '{{ copy_params.copy_version|default:''|escapejs }}', vq: '', prefilledVersion: '{{ copy_params.copy_version|default:''|escapejs }}', prefilledDeps: {} }"
+                      x-effect="if (!rc) { v = ''; vq = ''; prefilledDeps = {}; }"
+                      x-on:htmx:after-swap="
+                          if ($event.target.id === 'repo_class_input' && rc) {
+                              $nextTick(() => document.getElementById('repo_class_input').dispatchEvent(new Event('change')));
+                          } else if ($event.target.id === 'version-results' && prefilledVersion) {
+                              v = prefilledVersion;
+                              prefilledVersion = '';
+                              $nextTick(() => document.getElementById('version_input').dispatchEvent(new Event('change')));
+                          }
+                      "
+                      x-on:select-instance.window="
+                          $el.querySelector('[name=instance_name]').value = $event.detail.name;
+                          if ($event.detail.deployment_id) {
+                              $el.querySelector('[name=deployment_id]').value = $event.detail.deployment_id;
+                          }
+                          if ($event.detail.instance_configuration) {
+                              $el.querySelector('[name=instance_configuration]').value = JSON.stringify($event.detail.instance_configuration, null, 2);
+                          }
+                          prefilledDeps = $event.detail.dependencies || {};
+                          rc = $event.detail.repo_class;
+                          $nextTick(() => {
+                              document.getElementById('repo_class_input').dispatchEvent(new Event('change'));
+                              $nextTick(() => {
+                                  v = $event.detail.version;
+                                  $nextTick(() => document.getElementById('version_input').dispatchEvent(new Event('change')));
+                              });
+                          });
+                      ">
+                    {% csrf_token %}
+
+                    {% if copy_params.copy_instance %}
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2">
+                        <p class="text-xs text-blue-700 font-medium">Pre-filled from BOM instance</p>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Instance Name</label>
+                        <input type="text" name="instance_name" required
+                               value="{{ copy_params.copy_instance|default:'' }}"
+                               placeholder="e.g., private-ca"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-ns-magenta focus:border-ns-magenta">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Repo Class</label>
+                        <select name="repo_class" id="repo_class_input" required
+                                x-model="rc"
+                                x-on:change="v = ''; vq = ''"
+                                hx-get="{% url 'deployments:api_repo_class_options' %}"
+                                hx-trigger="load once"
+                                hx-target="this"
+                                hx-swap="innerHTML"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-ns-magenta focus:border-ns-magenta">
+                            <option value="">— Loading repo classes —</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                        <!-- Hidden field carries the selected version for POST and the
+                             dependency cascade (hx-trigger "change from:#version_input"). -->
+                        <input type="hidden" name="version" id="version_input" x-model="v">
+                        <input type="search" name="version_q" x-model="vq"
+                               :disabled="!rc"
+                               autocomplete="off"
+                               placeholder="Search versions…"
+                               hx-get="{% url 'deployments:api_repo_class_versions_options' %}"
+                               hx-trigger="input changed delay:300ms, search, change from:#repo_class_input"
+                               hx-include="#repo_class_input"
+                               hx-target="#version-results"
+                               hx-swap="innerHTML"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-ns-magenta focus:border-ns-magenta disabled:bg-gray-100 disabled:text-gray-400">
+                        <p class="mt-1 text-xs text-gray-500" x-show="v" x-cloak>
+                            Selected: <span class="font-mono text-gray-700" x-text="v"></span>
+                        </p>
+                        <div id="version-results"
+                             class="mt-1 border border-gray-200 rounded-md max-h-56 overflow-y-auto empty:hidden"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deployment ID</label>
+                        <input type="text" name="deployment_id"
+                               value="{{ copy_params.copy_deployment_id|default:'aaa' }}"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-ns-magenta focus:border-ns-magenta">
+                        <p class="mt-1 text-xs text-gray-500">Defaults to <span class="font-mono">aaa</span> for new instances.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Configuration (JSON)</label>
+                        <textarea name="instance_configuration" rows="4"
+                                  placeholder="{}"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:ring-ns-magenta focus:border-ns-magenta"></textarea>
+                    </div>
+
+                    <!-- Dependencies (auto-loaded on version change) -->
+                    <input type="hidden" name="selected_deps" id="selected_deps_input" :value="JSON.stringify(prefilledDeps || {})">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Dependencies</label>
+                        <div id="dependency-picker"
+                             hx-get="{% url 'deployments:api_repo_class_roles_query' draft_id=draft.pk %}"
+                             hx-trigger="change from:#version_input"
+                             hx-include="#repo_class_input,#version_input,#selected_deps_input"
+                             hx-target="this"
+                             hx-swap="innerHTML"
+                             class="text-xs text-gray-500">
+                            Pick a repo class and version to see dependencies.
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="w-full px-4 py-2 bg-ns-magenta text-white rounded-md hover:bg-ns-navy text-sm">
+                        <span class="htmx-indicator">Adding...</span>
+                        <span>Add to ChangeSet</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Optional: Reference an existing instance from a DeploymentSet's BOM -->
+            <div class="bg-white rounded-lg shadow p-6" x-data="{ searchEnv: '' }">
+                <h2 class="text-lg font-medium text-gray-900 mb-2">Search Existing Instances</h2>
+                <p class="text-sm text-gray-500 mb-3">
+                    Pick an environment to search; results can pre-fill the form above.
+                </p>
+                <input type="text" x-model="searchEnv"
+                       placeholder="Environment (e.g. dev)"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mb-2 focus:ring-ns-magenta focus:border-ns-magenta">
+                <input type="search" name="q"
+                       :disabled="!searchEnv"
+                       placeholder="Search by name or repo class..."
+                       hx-get="{% url 'deployments:api_search_instances_html' draft_id=draft.pk %}"
+                       hx-trigger="input changed delay:300ms, search"
+                       hx-target="#instance-search-results"
+                       hx-include="[name='environment']"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-ns-magenta focus:border-ns-magenta">
+                <input type="hidden" name="environment" :value="searchEnv">
+                <div id="instance-search-results" class="mt-2 max-h-60 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Current Items -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-medium text-gray-900">
+                        Changes ({% include "deployments/partials/changeset_change_count.html" %})
+                    </h2>
+                </div>
+                <div id="changeset-items">
+                    {% include "deployments/partials/changeset_items.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% extension_slot "changeset_modals" %}
+</div>
+{% endblock %}

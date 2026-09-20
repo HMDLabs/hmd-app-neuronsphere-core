@@ -1,0 +1,15 @@
+<!-- Candidate instances for a dependency role, sourced from an environment's BOM. -->
+{% if candidates %}
+<div class="space-y-1">
+    {% for cand in candidates %}
+    <label class="flex items-center text-sm">
+        <input type="checkbox" name="dep_{{ role }}" value="{{ cand }}"
+               class="mr-2">
+        <span class="font-mono">{{ cand }}</span>
+    </label>
+    {% endfor %}
+</div>
+<p class="mt-1 text-xs text-gray-400">From <span class="font-mono">{{ environment }}</span></p>
+{% else %}
+<p class="text-xs text-amber-600">No matching instances found in <span class="font-mono">{{ environment }}</span>.</p>
+{% endif %}

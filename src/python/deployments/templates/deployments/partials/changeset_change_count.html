@@ -1,0 +1,6 @@
+{% comment %}
+The ChangeSet item count, rendered above the item list. Included plainly by
+``changeset_draft.html`` and re-emitted with ``oob=True`` by
+``changeset_items_response.html`` so it refreshes out-of-band after add/remove.
+{% endcomment %}
+<span id="cs-change-count"{% if oob %} hx-swap-oob="true"{% endif %}>{{ draft.change_count }}</span>

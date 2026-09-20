@@ -1,0 +1,64 @@
+{% comment %}
+Searchable, paginated version picker results. Rendered by
+api_repo_class_versions_options into the caller's results container.
+
+Two call sites share this partial and both live inside an Alpine scope that
+defines `v` (the selected version, bound to a hidden name="version" input):
+
+  * the ChangeSet "Add Instance" form  -- default ids, no item_index
+  * the ChangeSet "Edit instance" panel -- ids suffixed with the item index,
+    since several panels can be open at once
+
+`results_id`/`input_id` come from the view (derived from ?item_index=, so they
+are never arbitrary caller-supplied strings). Pagination carries its state in
+the hx-get query string rather than an hx-include of [name=...] selectors,
+which would match every open picker on the page at once.
+{% endcomment %}
+{% with results_id=results_id|default:"version-results" input_id=input_id|default:"version_input" %}
+{% if not repo_class %}
+<p class="text-sm text-gray-500 px-3 py-2">Pick a repo class first.</p>
+{% elif not versions %}
+<p class="text-sm text-gray-500 px-3 py-2">
+    {% if q %}No versions match “{{ q }}”.{% else %}No versions available.{% endif %}
+</p>
+{% else %}
+<ul class="divide-y divide-gray-200">
+    {% for ver in versions %}
+    <li>
+        <button type="button"
+                @click="v = '{{ ver|escapejs }}';
+                        $nextTick(() => document.getElementById('{{ input_id|escapejs }}').dispatchEvent(new Event('change', { bubbles: true })))"
+                :class="v === '{{ ver|escapejs }}' ? 'bg-ns-magenta/10 text-ns-magenta' : 'hover:bg-gray-100 text-gray-900'"
+                class="w-full text-left px-3 py-2 text-sm font-mono flex items-center justify-between transition-colors">
+            <span>{{ ver }}</span>
+            <span x-show="v === '{{ ver|escapejs }}'" x-cloak class="text-xs">✓</span>
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+{% if pagination and pagination.num_pages > 1 %}
+<div class="flex items-center justify-between border-t border-gray-200 px-3 py-2 text-xs text-gray-600 bg-gray-50">
+    <span>{{ pagination.start }}–{{ pagination.end }} of {{ pagination.total }}</span>
+    <div class="flex items-center gap-1">
+        {% if pagination.has_prev %}
+        <button type="button"
+                hx-get="{% url 'deployments:api_repo_class_versions_options' %}?repo_class={{ repo_class|urlencode }}&amp;q={{ q|urlencode }}&amp;page={{ pagination.page|add:"-1" }}{% if item_index != None %}&amp;item_index={{ item_index }}{% endif %}"
+                hx-target="#{{ results_id }}" hx-swap="innerHTML"
+                class="px-2 py-1 border border-gray-300 rounded hover:bg-white">Prev</button>
+        {% else %}
+        <span class="px-2 py-1 border border-gray-200 rounded text-gray-300">Prev</span>
+        {% endif %}
+        <span class="text-gray-500">{{ pagination.page }}/{{ pagination.num_pages }}</span>
+        {% if pagination.has_next %}
+        <button type="button"
+                hx-get="{% url 'deployments:api_repo_class_versions_options' %}?repo_class={{ repo_class|urlencode }}&amp;q={{ q|urlencode }}&amp;page={{ pagination.page|add:"1" }}{% if item_index != None %}&amp;item_index={{ item_index }}{% endif %}"
+                hx-target="#{{ results_id }}" hx-swap="innerHTML"
+                class="px-2 py-1 border border-gray-300 rounded hover:bg-white">Next</button>
+        {% else %}
+        <span class="px-2 py-1 border border-gray-200 rounded text-gray-300">Next</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endwith %}

@@ -1,0 +1,55 @@
+{{- if .Values.ingress.enabled -}}
+{{- $class := include "ns.ingressClass" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "hmd-app-neuronsphere.fullname" . }}
+  labels:
+    {{- include "hmd-app-neuronsphere.labels" . | nindent 4 }}
+  {{- /* AWS ALB-controller annotations only apply when the ingress class is `alb`.
+         A non-ALB controller (e.g. the local k3s Traefik) needs none of these. */}}
+  {{- if eq $class "alb" }}
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: {{ .Values.alb.group_name }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/subnets: {{ .Values.alb.public_subnet_1 }},{{ .Values.alb.public_subnet_2 }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.alb.acm_arn }}
+    alb.ingress.kubernetes.io/ssl-policy: {{ .Values.alb.ssl_policy }}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: {{ .Values.alb.wafv2_acl_arn }}
+    alb.ingress.kubernetes.io/healthcheck-path: /health/
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/success-codes: "200"
+    {{- /* Match gunicorn's own worker timeout (src/docker/gunicorn.conf.py) so the
+           ALB doesn't cut a request off before the Django backend's own budget
+           would -- AWS's ALB default idle timeout (60s) is otherwise tighter than
+           gunicorn's 120s. */}}
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
+    {{- if not .Values.alb.group_name }}
+    alb.ingress.kubernetes.io/tags: repo_name={{ .Values.env.HMD_REPO_NAME }},instance_name={{ .Values.env.HMD_INSTANCE_NAME }},env={{ .Values.env.DD_ENV }},service={{ .Values.env.DD_SERVICE }},version={{ .Values.env.DD_VERSION }}
+    {{- end }}
+    external-dns.alpha.kubernetes.io/alias: "true"
+  {{- end }}
+spec:
+  ingressClassName: {{ $class }}
+  rules:
+      {{- /* Cloud ALB routes by the external DNS host; a local controller (Traefik)
+             omits the host so it path-routes regardless of the Host header bender
+             (or the proxy) sends. */}}
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "hmd-app-neuronsphere.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+      {{- if eq $class "alb" }}
+      host: {{ .Values.alb.hostname | quote }}
+      {{- end }}
+{{- end }}

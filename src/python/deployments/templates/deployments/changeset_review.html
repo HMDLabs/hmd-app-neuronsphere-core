@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% load extension_slots %}
+
+{% block title %}Review ChangeSet - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6" x-data="{ showRejectModal: false, showApplyModal: false, impactEnv: '' }">
+    <!-- Header -->
+    <div>
+        <nav class="text-sm text-gray-500 mb-2">
+            <a href="{% url 'deployments:changeset_list' %}" class="hover:text-gray-700">Change Sets</a>
+            <span class="mx-2">/</span>
+            <a href="{% url 'deployments:changeset_draft' draft_id=draft.pk %}" class="hover:text-gray-700">{{ draft.name }}</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Review</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Review ChangeSet</h1>
+        <p class="text-gray-600 mt-1">Confirm the changes before applying</p>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">ChangeSet Summary</h2>
+        <dl class="grid grid-cols-2 gap-4">
+            <div>
+                <dt class="text-sm text-gray-500">Name</dt>
+                <dd class="font-medium text-gray-900">{{ draft.name }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-gray-500">Status</dt>
+                <dd>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium
+                        {% if draft.status == 'draft' %}bg-gray-100 text-gray-700
+                        {% elif draft.status == 'in_review' %}bg-blue-100 text-blue-800
+                        {% elif draft.status == 'accepted' %}bg-green-100 text-green-800
+                        {% elif draft.status == 'rejected' %}bg-red-100 text-red-800
+                        {% endif %}">
+                        {{ draft.get_status_display }}
+                    </span>
+                </dd>
+            </div>
+            <div>
+                <dt class="text-sm text-gray-500">Total Changes</dt>
+                <dd class="font-medium text-gray-900">{{ draft.change_count }} instance(s)</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-gray-500">Applications</dt>
+                <dd class="font-medium text-gray-900">{% extension_slot "changeset_application_count" %}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- BOM Impact Preview (per-environment, on demand) -->
+    {% if draft.content %}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-medium text-gray-900">BOM Impact Preview</h2>
+                <p class="text-sm text-gray-500 mt-1">Pick an environment to see how this ChangeSet would affect it.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="text" x-model="impactEnv"
+                       placeholder="environment (e.g. admin)"
+                       class="border border-gray-300 rounded-md px-2 py-1 text-sm">
+                <button type="button"
+                        :disabled="!impactEnv"
+                        hx-get="{% url 'deployments:changeset_bom_impact' draft_id=draft.pk %}"
+                        hx-include="[name='impact_environment']"
+                        hx-target="#bom-impact-container"
+                        hx-swap="innerHTML"
+                        class="px-3 py-1 bg-ns-navy text-ns-lavender rounded text-xs hover:bg-ns-medium">
+                    Preview
+                </button>
+                <input type="hidden" name="impact_environment" :value="impactEnv">
+                <input type="hidden" name="environment" :value="impactEnv">
+            </div>
+        </div>
+        <div id="bom-impact-container">
+            <div class="px-6 py-6 text-center text-gray-500 text-sm">
+                Enter an environment above and click Preview.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Changes List -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-medium text-gray-900">Changes to Apply</h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for item in draft.content %}
+            <div class="px-6 py-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                DEPLOY
+                            </span>
+                            <span class="font-medium text-gray-900">{{ item.repo_instance_name }}</span>
+                        </div>
+                        <div class="mt-1 text-sm text-gray-500">
+                            {{ item.repo_class_name }} @ <span class="font-mono">v{{ item.repo_class_version }}</span>
+                        </div>
+                    </div>
+                    <span class="text-sm text-gray-500">ID: {{ item.deployment_id }}</span>
+                </div>
+                {% if item.instance_configuration %}
+                <div class="mt-3">
+                    <p class="text-xs text-gray-500 mb-1">Configuration:</p>
+                    <pre class="bg-gray-50 rounded p-2 text-xs font-mono overflow-x-auto">{{ item.instance_configuration|pprint }}</pre>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="px-6 py-12 text-center text-gray-500">
+                <p>No changes to apply.</p>
+                <a href="{% url 'deployments:changeset_draft' draft_id=draft.pk %}" class="text-ns-magenta hover:underline mt-2 inline-block">
+                    Go back to add changes
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Validation Results (async loaded) -->
+    {% if draft.content %}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-medium text-gray-900">Validation</h2>
+            <p class="text-sm text-gray-500 mt-1">Pre-apply checks for dependencies, duplicates, and required fields</p>
+        </div>
+        <div id="validation-container"
+             class="px-6 py-4"
+             hx-get="{% url 'deployments:changeset_validate' draft_id=draft.pk %}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="flex items-center text-gray-500 text-sm">
+                <svg class="animate-spin h-4 w-4 mr-2 text-ns-navy" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Running validation checks...
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Primary Actions -->
+    {% if draft.content %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="h-5 w-5 text-yellow-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-yellow-800">Before you proceed</h3>
+                <p class="mt-1 text-sm text-yellow-700">
+                    Applying this ChangeSet triggers real deployments. The same ChangeSet
+                    can be applied to multiple DeploymentSets.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-end space-x-3">
+        <a href="{% url 'deployments:changeset_draft' draft_id=draft.pk %}"
+           class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            Back to Edit
+        </a>
+        <button @click="showRejectModal = true"
+                class="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600">
+            Reject
+        </button>
+        {% extension_slot "changeset_review_actions" %}
+    </div>
+
+    <!-- Secondary Actions -->
+    <div class="flex justify-end space-x-3 border-t pt-4">
+        <form method="post" action="{% url 'deployments:changeset_clone' draft_id=draft.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+                Clone ChangeSet
+            </button>
+        </form>
+    </div>
+
+    {% extension_slot "changeset_modals" %}
+    {% endif %}
+
+    <!-- Reject Modal -->
+    <div x-show="showRejectModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="reject-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                 @click="showRejectModal = false"></div>
+
+            <!-- Modal -->
+            <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-5">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="reject-modal-title">
+                            Reject ChangeSet
+                        </h3>
+                        <p class="mt-2 text-sm text-gray-500">
+                            Provide a reason for rejecting this ChangeSet. The author can reopen it for editing.
+                        </p>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'deployments:changeset_reject' draft_id=draft.pk %}" class="mt-4">
+                    {% csrf_token %}
+                    <textarea name="rejection_reason" rows="4" required
+                              placeholder="Reason for rejection..."
+                              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"></textarea>
+                    <div class="mt-4 flex justify-end space-x-3">
+                        <button type="button" @click="showRejectModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">
+                            Reject ChangeSet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

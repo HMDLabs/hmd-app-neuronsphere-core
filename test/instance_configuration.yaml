@@ -1,0 +1,156 @@
+alb:
+  hostname: floci-eks-neuronsphere
+autoscaling:
+  enabled: false
+clusterSecretStore:
+  name: aws-secrets-manager
+config:
+  createLocalSuperuser: true
+  oktaAuth: false
+  deploymentApiUrl: http://hmd_proxy/hmd_ms_deployment
+  djangoDebug: 'true'
+  extraAllowedHosts: localhost,floci-eks-neuronsphere
+  extraCsrfOrigins: http://floci-eks-neuronsphere,http://localhost
+  gunicornWorkers: '3'
+  localHttp: true
+  localSuperuserEmail: testadmin@example.com
+  localSuperuserPassword: testpassword
+  localSuperuserUsername: testadmin
+  oktaGroupMapping: ''
+  oktaSuperuserGroups: admin
+  sessionTimeoutHours: '8'
+  telemetryServiceTimeout: '5'
+  telemetryServiceUrls: ''
+dependencies:
+  compute:
+    hmd_resources:
+    - output:
+        node_group_name: neuronsphere-compute
+      resource_definition:
+        resource_definition_name: compute-node
+        resource_namespace: compute.neuronsphere.io
+        version: 0.1.0
+      resource_name: neuronsphere-compute
+      tags:
+      - key: cluster_type
+        value: k3s
+      - key: environment
+        value: local
+    instance_name: local
+  db-credentials:
+    hmd_resources:
+    - output:
+        database_name: deployment_gui
+        engine_version: '15'
+        host: hmd_db
+        port: 5432
+        secret_name: hmd_db_hmd-postgres-base_aaa_local_reg1_none_deployment_gui
+      resource_definition:
+        resource_definition_name: postgres
+        resource_namespace: database.neuronsphere.io
+        version: 0.1.0
+      resource_name: local-db-deployment_gui
+      tags:
+      - key: database
+        value: deployment_gui
+      - key: environment
+        value: local
+      - key: role
+        value: db-credentials
+  deployment-service:
+    _scaffold: true
+    hmd_resources: []
+    repo_class_name: hmd-ms-deployment
+    role: deployment-service
+    version_spec: ~= 0.1
+  eks-alb:
+    hmd_resources:
+    - output:
+        ingress_class: traefik
+        name: traefik
+        namespace: kube-system
+      resource_definition:
+        resource_definition_name: ingress-controller
+        resource_namespace: kubernetes.neuronsphere.io
+        version: 0.1.0
+      resource_name: neuronsphere-traefik
+      tags:
+      - key: environment
+        value: local
+      - key: cluster_type
+        value: k3s
+  eks-cluster:
+    hmd_resources:
+    - output:
+        cluster_name: neuronsphere
+        endpoint: https://localhost:6500
+      resource_definition:
+        resource_definition_name: kubernetes-cluster
+        resource_namespace: kubernetes.neuronsphere.io
+        version: 0.1.0
+      resource_name: neuronsphere
+      tags:
+      - key: cluster_type
+        value: k3s
+      - key: environment
+        value: local
+  ext-secrets:
+    _scaffold: true
+    hmd_resources: []
+    repo_class_name: hmd-inf-ext-secrets
+    role: ext-secrets
+    version_spec: ~= 0.1.4
+  okta-app:
+    deployment_id: local
+    instance_name: okta
+    repo_name: hmd-inf-okta-app
+deployment_id: aaa
+details: {}
+env:
+  HMD_CUSTOMER_CODE: none
+  HMD_DID: local
+  HMD_ENVIRONMENT: local
+  HMD_INSTANCE_NAME: deployment-gui
+  HMD_REGION: reg1
+  HMD_REPO_NAME: hmd-app-neuronsphere
+  HMD_REPO_VERSION: '0.1'
+fullnameOverride: ''
+image:
+  pullPolicy: IfNotPresent
+  repository: ghcr.io/hmdlabs/hmd-app-neuronsphere
+  tag: '0.1'
+imagePullSecrets:
+- name: hmd-docker-repo-secret
+ingress:
+  enabled: true
+instance_name: deployment-gui
+nameOverride: ''
+podAnnotations: {}
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+replicaCount: 1
+repo_name: hmd-app-neuronsphere
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+secrets:
+  djangoSecretKey: deployment-gui-django-secret
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+service:
+  port: 8000
+  type: ClusterIP
+serviceAccount:
+  create: true
+  name: ''
+version: '0.1'

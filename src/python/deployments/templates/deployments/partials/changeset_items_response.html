@@ -1,0 +1,8 @@
+{% comment %}
+Response body for ChangeSet item mutations (add/remove). Swaps the item list into
+``#changeset-items`` and out-of-band-refreshes the header (Review/Apply block +
+change count) so they react to ``draft.content`` changing without a page reload.
+{% endcomment %}
+{% include "deployments/partials/changeset_items.html" %}
+{% include "deployments/partials/changeset_header_actions.html" with oob="1" %}
+{% include "deployments/partials/changeset_change_count.html" with oob="1" %}

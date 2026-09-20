@@ -1,0 +1,233 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hmd-app-neuronsphere.fullname" . }}
+  labels:
+    {{- include "hmd-app-neuronsphere.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "hmd-app-neuronsphere.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hmd-app-neuronsphere.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hmd-app-neuronsphere.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.env.HMD_REPO_VERSION }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if or .Values.config.createLocalSuperuser .Values.config.createLocalMcpKey }}
+          {{- /* Local only: migrate, then idempotently bootstrap the credentials
+                 the acceptance suites authenticate with -- a superuser from
+                 DJANGO_SUPERUSER_* for the browser suites, and a fixed MCP bearer
+                 key for the protocol suite, which has no browser to log in with.
+                 The key is supplied rather than generated so bender can read it
+                 from the same instance configuration that set it; only its hash
+                 is stored. `|| true` keeps re-deploys green once they exist. */}}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              python manage.py migrate --noinput
+              {{- if .Values.config.createLocalSuperuser }}
+              python manage.py createsuperuser --noinput || true
+              {{- end }}
+              {{- if .Values.config.createLocalMcpKey }}
+              python manage.py create_mcp_api_key --user {{ .Values.config.localSuperuserUsername | default "testadmin" }} --name bender --key "$MCP_LOCAL_API_KEY" --if-not-exists || true
+              {{- end }}
+          {{- else }}
+          command: ["python", "manage.py", "migrate", "--noinput"]
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "hmd-app-neuronsphere.fullname" . }}-config
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            {{- if .Values.config.createLocalSuperuser }}
+            - name: DJANGO_SUPERUSER_USERNAME
+              value: {{ .Values.config.localSuperuserUsername | default "testadmin" | quote }}
+            - name: DJANGO_SUPERUSER_EMAIL
+              value: {{ .Values.config.localSuperuserEmail | default "testadmin@example.com" | quote }}
+            - name: DJANGO_SUPERUSER_PASSWORD
+              value: {{ .Values.config.localSuperuserPassword | default "testpassword" | quote }}
+            {{- end }}
+            {{- if .Values.config.createLocalMcpKey }}
+            - name: MCP_LOCAL_API_KEY
+              value: {{ required "config.localMcpApiKey is required when config.createLocalMcpKey is set" .Values.config.localMcpApiKey | quote }}
+            {{- end }}
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.djangoSecretKey }}
+                  key: secret-key
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_PASS
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_PORT
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.env.HMD_REPO_VERSION }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.alb.hostname }}
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.alb.hostname }}
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          envFrom:
+            - configMapRef:
+                name: {{ include "hmd-app-neuronsphere.fullname" . }}-config
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.djangoSecretKey }}
+                  key: secret-key
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_PASS
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "k8sDbSecretName" . }}
+                  key: DB_PORT
+            {{- if index .Values "dependencies" "redis" }}
+            - name: REDIS_HOST
+              value: {{ (include "redisHost" .) | quote }}
+            - name: REDIS_PORT
+              value: {{ (include "redisPort" .) | quote }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "hmd-app-neuronsphere.fullname" . }}-redis-secret
+                  key: username
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "hmd-app-neuronsphere.fullname" . }}-redis-secret
+                  key: password
+            {{- end }}
+            {{- /* Both secrets are synced by okta-web-app-external-secret.yaml, which
+                   is itself behind this flag. Referencing them with Okta off would
+                   leave every pod in CreateContainerConfigError on secrets that
+                   never sync; with it off, Django registers no OIDC provider and
+                   falls back to the username/password superuser. */}}
+            {{- if .Values.config.oktaAuth }}
+            - name: OAUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: okta-web-application
+                  key: OAUTH_CLIENT_ID
+            - name: OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: okta-web-application
+                  key: OAUTH_CLIENT_SECRET
+            - name: OAUTH_PROVIDER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: okta-global
+                  key: OAUTH_PROVIDER_URL
+            {{- end }}
+            {{- /* Multi-provider SSO, synced by idp-providers-external-secret.yaml.
+                   Takes precedence over the single-provider OAUTH_* vars above, so a
+                   customer on Auth0 or their own OIDC provider needs no Okta at all. */}}
+            {{- if .Values.config.idpProvidersSecret }}
+            - name: OAUTH_PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: idp-providers
+                  key: OAUTH_PROVIDERS
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- $compute := index .Values "dependencies" "compute" }}
+      nodeSelector:
+        kubernetes.io/os: linux
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: hmdlabs.io/repo-instance-name
+                operator: In
+                values:
+                {{- if kindIs "map" $compute }}
+                - {{ $compute.instance_name }}
+                {{- else }}
+                {{- range $compute }}
+                - {{ .instance_name }}
+                {{- end }}
+                {{- end }}

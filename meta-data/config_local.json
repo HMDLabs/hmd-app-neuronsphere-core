@@ -1,0 +1,227 @@
+{
+  "replicaCount": 1,
+  "image": {
+    "repository": "ghcr.io/hmdlabs/hmd-app-neuronsphere-core",
+    "tag": "0.1",
+    "pullPolicy": "IfNotPresent"
+  },
+  "imagePullSecrets": [
+    {
+      "name": "hmd-docker-repo-secret"
+    }
+  ],
+  "nameOverride": "",
+  "fullnameOverride": "",
+  "serviceAccount": {
+    "create": true,
+    "name": ""
+  },
+  "podAnnotations": {},
+  "podSecurityContext": {
+    "runAsNonRoot": true,
+    "runAsUser": 1000,
+    "fsGroup": 1000
+  },
+  "securityContext": {
+    "allowPrivilegeEscalation": false,
+    "capabilities": {
+      "drop": [
+        "ALL"
+      ]
+    },
+    "readOnlyRootFilesystem": false
+  },
+  "service": {
+    "type": "ClusterIP",
+    "port": 8000
+  },
+  "ingress": {
+    "enabled": true
+  },
+  "resources": {
+    "limits": {
+      "cpu": "1000m",
+      "memory": "1Gi"
+    },
+    "requests": {
+      "cpu": "200m",
+      "memory": "512Mi"
+    }
+  },
+  "autoscaling": {
+    "enabled": false
+  },
+  "config": {
+    "oktaAuth": false,
+    "djangoDebug": "true",
+    "sessionTimeoutHours": "8",
+    "telemetryServiceUrls": "",
+    "telemetryServiceTimeout": "5",
+    "oktaGroupMapping": "",
+    "oktaSuperuserGroups": "admin",
+    "deploymentApiUrl": "http://hmd_proxy/hmd_ms_deployment",
+    "extraAllowedHosts": "localhost,floci-eks-neuronsphere",
+    "gunicornWorkers": "3",
+    "createLocalSuperuser": true,
+    "localSuperuserUsername": "testadmin",
+    "localSuperuserPassword": "testpassword",
+    "localSuperuserEmail": "testadmin@example.com",
+    "createLocalMcpKey": true,
+    "localMcpApiKey": "nsmcp_local_bender_key_do_not_use_in_cloud",
+    "extraCsrfOrigins": "http://floci-eks-neuronsphere,http://localhost",
+    "localHttp": true
+  },
+  "secrets": {
+    "djangoSecretKey": "deployment-gui-django-secret"
+  },
+  "instance_name": "deployment-gui",
+  "dependencies": {
+    "okta-app": {
+      "instance_name": "okta",
+      "repo_name": "hmd-inf-okta-app",
+      "deployment_id": "local"
+    },
+    "deployment-service": {
+      "_scaffold": true,
+      "role": "deployment-service",
+      "repo_class_name": "hmd-ms-deployment",
+      "version_spec": "~= 0.1",
+      "hmd_resources": []
+    },
+    "db-credentials": {
+      "hmd_resources": [
+        {
+          "resource_name": "local-db-deployment_gui",
+          "resource_definition": {
+            "resource_namespace": "database.neuronsphere.io",
+            "resource_definition_name": "postgres",
+            "version": "0.1.0"
+          },
+          "output": {
+            "host": "hmd_db",
+            "port": 5432,
+            "database_name": "deployment_gui",
+            "secret_name": "hmd_db_hmd-postgres-base_aaa_local_reg1_none_deployment_gui",
+            "engine_version": "15"
+          },
+          "tags": [
+            {
+              "key": "database",
+              "value": "deployment_gui"
+            },
+            {
+              "key": "environment",
+              "value": "local"
+            },
+            {
+              "key": "role",
+              "value": "db-credentials"
+            }
+          ]
+        }
+      ]
+    },
+    "eks-cluster": {
+      "hmd_resources": [
+        {
+          "resource_name": "neuronsphere",
+          "resource_definition": {
+            "resource_namespace": "kubernetes.neuronsphere.io",
+            "resource_definition_name": "kubernetes-cluster",
+            "version": "0.1.0"
+          },
+          "output": {
+            "cluster_name": "neuronsphere",
+            "endpoint": "https://localhost:6500"
+          },
+          "tags": [
+            {
+              "key": "cluster_type",
+              "value": "k3s"
+            },
+            {
+              "key": "environment",
+              "value": "local"
+            }
+          ]
+        }
+      ]
+    },
+    "eks-alb": {
+      "hmd_resources": [
+        {
+          "resource_name": "neuronsphere-traefik",
+          "resource_definition": {
+            "resource_namespace": "kubernetes.neuronsphere.io",
+            "resource_definition_name": "ingress-controller",
+            "version": "0.1.0"
+          },
+          "output": {
+            "name": "traefik",
+            "namespace": "kube-system",
+            "ingress_class": "traefik"
+          },
+          "tags": [
+            {
+              "key": "environment",
+              "value": "local"
+            },
+            {
+              "key": "cluster_type",
+              "value": "k3s"
+            }
+          ]
+        }
+      ]
+    },
+    "ext-secrets": {
+      "_scaffold": true,
+      "role": "ext-secrets",
+      "repo_class_name": "hmd-inf-ext-secrets",
+      "version_spec": "~= 0.1.4",
+      "hmd_resources": []
+    },
+    "compute": {
+      "hmd_resources": [
+        {
+          "resource_name": "neuronsphere-compute",
+          "resource_definition": {
+            "resource_namespace": "compute.neuronsphere.io",
+            "resource_definition_name": "compute-node",
+            "version": "0.1.0"
+          },
+          "output": {
+            "node_group_name": "neuronsphere-compute"
+          },
+          "tags": [
+            {
+              "key": "cluster_type",
+              "value": "k3s"
+            },
+            {
+              "key": "environment",
+              "value": "local"
+            }
+          ]
+        }
+      ],
+      "instance_name": "local"
+    }
+  },
+  "details": {},
+  "alb": {
+    "hostname": "floci-eks-neuronsphere"
+  },
+  "clusterSecretStore": {
+    "name": "aws-secrets-manager"
+  },
+  "env": {
+    "HMD_INSTANCE_NAME": "deployment-gui",
+    "HMD_REPO_NAME": "hmd-app-neuronsphere-core",
+    "HMD_REPO_VERSION": "0.1",
+    "HMD_DID": "local",
+    "HMD_REGION": "reg1",
+    "HMD_CUSTOMER_CODE": "none",
+    "HMD_ENVIRONMENT": "local"
+  }
+}

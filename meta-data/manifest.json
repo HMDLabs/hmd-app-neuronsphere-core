@@ -1,0 +1,370 @@
+{
+  "name": "hmd-app-neuronsphere-core",
+  "description": "Core of the NeuronSphere deployment GUI: environments, BOMs, ChangeSet drafting and validation, repo classes, the resource catalogue and discovery -- everything that works against the registry-and-resolver core of the deployment service. The premium overlay (hmd-app-neuronsphere) layers run observability and apply on top of this image.",
+  "build": {
+    "commands": [
+      [
+        "python"
+      ],
+      [
+        "docker"
+      ],
+      [
+        "cdktf"
+      ],
+      [
+        "helm"
+      ]
+    ]
+  },
+  "project_type": {
+    "name": "Django Application",
+    "facets": [
+      "default_repo",
+      "docker_img_repo",
+      "helm_repo"
+    ]
+  },
+  "docker": {
+    "build": {
+      "install_local": true,
+      "context_dir": "./"
+    }
+  },
+  "deploy": {
+    "commands": [
+      [
+        "cdktf"
+      ],
+      [
+        "helm"
+      ]
+    ],
+    "dependencies": {
+      "okta-app": {
+        "repo_class_name": "hmd-inf-okta-app",
+        "required": "false",
+        "version_spec": "~= 0.2"
+      },
+      "deployment-service": {
+        "repo_class_name": "hmd-ms-deployment",
+        "required": "true",
+        "version_spec": "~= 0.1",
+        "resource": {
+          "resource_namespace": "application.neuronsphere.io",
+          "resource_definition_name": "microservice",
+          "version": "0.1.0",
+          "version_spec": "~= 0.1",
+          "tag_selector": "repo_class=hmd-ms-deployment"
+        }
+      },
+      "db-credentials": {
+        "repo_class_name": "hmd-database-account",
+        "required": "true",
+        "version_spec": "~= 0.1",
+        "resource": {
+          "resource_namespace": "database.neuronsphere.io",
+          "resource_definition_name": "postgres",
+          "version": "0.1.0",
+          "version_spec": "~= 0.1"
+        }
+      },
+      "eks-cluster": {
+        "repo_class_name": "hmd-inf-eks-cluster",
+        "required": "true",
+        "version_spec": "~= 0.2",
+        "resource": {
+          "resource_namespace": "kubernetes.neuronsphere.io",
+          "resource_definition_name": "kubernetes-cluster",
+          "version": "0.1.0",
+          "version_spec": "~= 0.1"
+        }
+      },
+      "eks-alb": {
+        "repo_class_name": "hmd-inf-eks-alb",
+        "required": "true",
+        "version_spec": "~= 0.2",
+        "resource": {
+          "resource_namespace": "kubernetes.neuronsphere.io",
+          "resource_definition_name": "ingress-controller",
+          "version": "0.1.0",
+          "version_spec": "~= 0.1"
+        }
+      },
+      "ext-secrets": {
+        "repo_class_name": "hmd-inf-ext-secrets",
+        "required": "true",
+        "version_spec": "~= 0.1.4"
+      },
+      "compute": {
+        "repo_class_name": "hmd-inf-eks-node-group",
+        "required": "true",
+        "version_spec": "~= 0.1",
+        "resource": {
+          "resource_namespace": "compute.neuronsphere.io",
+          "resource_definition_name": "compute-node",
+          "version": "0.1.0",
+          "version_spec": "~= 0.1"
+        }
+      },
+      "redis": {
+        "repo_class_name": "hmd-inf-redis",
+        "required": "false",
+        "version_spec": "~= 0.1"
+      }
+    },
+    "default_configuration": {
+      "replicaCount": 2,
+      "image": {
+        "repository": "ghcr.io/hmdlabs/hmd-app-neuronsphere-core",
+        "pullPolicy": "IfNotPresent",
+        "tag": ""
+      },
+      "imagePullSecrets": [
+        {
+          "name": "hmd-docker-repo-secret"
+        }
+      ],
+      "nameOverride": "",
+      "fullnameOverride": "",
+      "serviceAccount": {
+        "create": true,
+        "name": ""
+      },
+      "podAnnotations": {},
+      "podSecurityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "fsGroup": 1000
+      },
+      "securityContext": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "drop": [
+            "ALL"
+          ]
+        },
+        "readOnlyRootFilesystem": false
+      },
+      "service": {
+        "type": "ClusterIP",
+        "port": 8000
+      },
+      "ingress": {
+        "enabled": true
+      },
+      "resources": {
+        "limits": {
+          "cpu": "500m",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "100m",
+          "memory": "512Mi"
+        }
+      },
+      "autoscaling": {
+        "enabled": true,
+        "minReplicas": 2,
+        "maxReplicas": 5,
+        "targetCPUUtilizationPercentage": 80
+      },
+      "config": {
+        "oktaAuth": true,
+        "djangoDebug": "false",
+        "sessionTimeoutHours": "8",
+        "telemetryServiceUrls": "",
+        "telemetryServiceTimeout": "5",
+        "oktaGroupMapping": "",
+        "oktaSuperuserGroups": "admin",
+        "idpProvidersSecret": "",
+        "idpGroupMapping": "",
+        "idpSuperuserGroups": "",
+        "mcpEnabled": "true",
+        "mcpApiKeysEnabled": "false",
+        "mcpFederationEnabled": "false",
+        "mcpOktaAudience": "api://neuronsphere",
+        "mcpDownstreamTokenMode": "passthrough",
+        "gunicornWorkers": "3"
+      },
+      "secrets": {
+        "djangoSecretKey": "deployment-gui-django-secret"
+      }
+    }
+  },
+  "discovery": {
+    "summary": "Core NeuronSphere deployment GUI (Django + HTMX), the half of the NERD0015 split that nsctl runs locally. Serves environments, BOMs, ChangeSet drafting/validation/compare, repo classes and versions, the resource catalogue and discovery search, plus the MCP server, against the deployment service's core routes. Ships an extension seam -- DJANGO_EXTRA_APPS, DEPLOYMENT_API_CLIENT_CLASS, {% extension_slot %} -- through which the premium image (hmd-app-neuronsphere, FROM this one) adds the ChangeSetDeployment list, timeline, DAG, logs and apply.",
+    "entry_points": [
+      {
+        "path": "src/python/manage.py",
+        "description": "Django management entry point for running and serving the application."
+      },
+      {
+        "path": "src/python/deployment_gui/settings/base.py",
+        "description": "Shared Django settings: allauth/Okta OIDC provider, installed apps, and optional django-redis caching (falls back to LocMemCache)."
+      },
+      {
+        "path": "src/python/deployment_gui/urls.py",
+        "description": "Project root URL routing for the deployment_gui Django project."
+      },
+      {
+        "path": "src/python/deployments/views.py",
+        "description": "Main app views: BOM DAG, repo class version detail, ChangeSet views/diffs, environments, deployment sets, instances, and the health check."
+      },
+      {
+        "path": "src/python/deployments/urls.py",
+        "description": "App URL routes mapping request paths to the deployments views."
+      },
+      {
+        "path": "src/python/deployment_gui/asgi.py",
+        "description": "ASGI entry point: routes /mcp to the FastMCP server and everything else to Django."
+      },
+      {
+        "path": "src/python/ns_mcp/server.py",
+        "description": "Builds the MCP server: auth provider, tool registration, federation seam."
+      },
+      {
+        "path": "src/python/deployments/templatetags/extension_slots.py",
+        "description": "The extension seam: where premium apps render into core pages."
+      }
+    ],
+    "capabilities": [
+      {
+        "name": "/health/",
+        "kind": "endpoint",
+        "description": "Health check endpoint returning application liveness status.",
+        "location": "src/python/deployments/views.py"
+      },
+      {
+        "name": "require_environment_access",
+        "kind": "function",
+        "description": "Decorator enforcing per-environment RBAC by resolving the caller's Okta group -> environment role mapping.",
+        "location": "src/python/deployments/decorators.py"
+      },
+      {
+        "name": "require_deployment_set_access",
+        "kind": "function",
+        "description": "Decorator enforcing RBAC on deployment-set scoped views.",
+        "location": "src/python/deployments/decorators.py"
+      },
+      {
+        "name": "OktaTokenExpiryMiddleware",
+        "kind": "class",
+        "description": "Middleware that redirects users to Okta re-login when their access token has expired.",
+        "location": "src/python/deployments/middleware.py"
+      },
+      {
+        "name": "DeploymentAPIClient",
+        "kind": "class",
+        "description": "Client for the hmd-ms-deployment microservice; forwards the user's Okta access token on each backend call.",
+        "location": "src/python/deployments/services/api_client.py"
+      },
+      {
+        "name": "get_api_client_for_request",
+        "kind": "function",
+        "description": "Per-request factory building an authenticated DeploymentAPIClient from the current request's Okta token.",
+        "location": "src/python/deployments/services/auth.py"
+      },
+      {
+        "name": "/mcp",
+        "kind": "endpoint",
+        "description": "Read-only Model Context Protocol server over Streamable HTTP. Authenticates with a platform API key (Okta bearer in Phase 3), authorizes every environment-scoped tool against UserEnvironmentPermission, and audits each call.",
+        "location": "src/python/ns_mcp/server.py"
+      },
+      {
+        "name": "list_environments",
+        "kind": "operation",
+        "description": "MCP tool: environments the caller may read, with their role on each.",
+        "location": "src/python/ns_mcp/tools/environments.py"
+      },
+      {
+        "name": "MCPApiKey",
+        "kind": "class",
+        "description": "Bearer credential for the MCP server, bound to a Django user; only the SHA-256 hash is stored.",
+        "location": "src/python/deployments/models.py"
+      },
+      {
+        "name": "create_mcp_api_key",
+        "kind": "cli_command",
+        "description": "Management command that mints an MCP API key and prints it once.",
+        "location": "src/python/deployments/management/commands/create_mcp_api_key.py"
+      },
+      {
+        "name": "describe_environment",
+        "kind": "operation",
+        "description": "MCP tool: what is deployed in an environment -- counts and filter facets at detail='summary', the paginated instance list at detail='full'.",
+        "location": "src/python/ns_mcp/tools/bom.py"
+      },
+      {
+        "name": "describe_instance",
+        "kind": "operation",
+        "description": "MCP tool: one instance's metadata, effective merged configuration, dependency wiring tagged by kind, and recent deployment history.",
+        "location": "src/python/ns_mcp/tools/instances.py"
+      },
+      {
+        "name": "get_instance_dependencies",
+        "kind": "operation",
+        "description": "MCP tool: an instance's dependency edges in either direction; one BOM read, no role classification.",
+        "location": "src/python/ns_mcp/tools/instances.py"
+      },
+      {
+        "name": "find_resource_providers",
+        "kind": "operation",
+        "description": "MCP tool: which repo classes can produce a resource definition, with its isa ancestry and effective output schema. Platform-wide catalog query, not environment-scoped.",
+        "location": "src/python/ns_mcp/tools/resources.py"
+      },
+      {
+        "name": "get_instance_configuration",
+        "kind": "operation",
+        "description": "MCP tool: the effective deployed configuration of one instance, with a dotted-path projection and a keys-only outline for probing a large config cheaply.",
+        "location": "src/python/ns_mcp/tools/instances.py"
+      },
+      {
+        "name": "search_repo_classes",
+        "kind": "operation",
+        "description": "MCP tool: search the platform-wide repo class catalog by name or repo type.",
+        "location": "src/python/ns_mcp/tools/repo_classes.py"
+      },
+      {
+        "name": "describe_repo_class",
+        "kind": "operation",
+        "description": "MCP tool: a repo class's versions, or one version's discovery metadata, declared dependency roles, and default configuration.",
+        "location": "src/python/ns_mcp/tools/repo_classes.py"
+      },
+      {
+        "name": "list_resource_definitions",
+        "kind": "operation",
+        "description": "MCP tool: the resource definition catalog -- the namespaced, versioned types dependency roles are declared against.",
+        "location": "src/python/ns_mcp/tools/resources.py"
+      },
+      {
+        "name": "find_resource_candidates",
+        "kind": "operation",
+        "description": "MCP tool: what is already deployed in one environment that could satisfy a resource dependency role.",
+        "location": "src/python/ns_mcp/tools/resources.py"
+      },
+      {
+        "name": "compare_environments",
+        "kind": "operation",
+        "description": "MCP tool: how two environments have diverged; authorizes view access to both.",
+        "location": "src/python/ns_mcp/tools/environments.py"
+      },
+      {
+        "name": "extension_slot",
+        "kind": "function",
+        "description": "Template tag rendering <app>/slots/<name>.html from every settings.EXTRA_APPS app, with the app's slots.context(request).",
+        "location": "src/python/deployments/templatetags/extension_slots.py"
+      }
+    ],
+    "related_docs": [
+      {
+        "title": "User Guide",
+        "path": "docs/user_guide/index.rst"
+      },
+      {
+        "title": "Environment BOM View (NERD001)",
+        "path": "docs/proposals/NERD001_Environment_BOM_View.rst"
+      }
+    ]
+  }
+}

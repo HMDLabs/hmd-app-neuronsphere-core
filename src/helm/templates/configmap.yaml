@@ -1,0 +1,99 @@
+{{- $dbCredentialsInstance := index .Values "dependencies" "db-credentials" "instance_name" -}}
+{{- $pg := include "ns.resourceOutput" (dict "ctx" . "def" "postgres") | fromJson -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hmd-app-neuronsphere.fullname" . }}-config
+  labels:
+    {{- include "hmd-app-neuronsphere.labels" . | nindent 4 }}
+data:
+  DJANGO_DEBUG: {{ .Values.config.djangoDebug | quote }}
+  {{- /* Local deploys front the pod through hmd_proxy (Host: localhost) while the ALB
+         hostname is forced by _set_local_standard_values; `config.extraAllowedHosts`
+         (comma-separated) is appended so both the probe Host and the proxy Host pass. */}}
+  DJANGO_ALLOWED_HOSTS: {{ if .Values.config.extraAllowedHosts }}{{ printf "%s,%s" .Values.alb.hostname .Values.config.extraAllowedHosts | quote }}{{ else }}{{ .Values.alb.hostname | quote }}{{ end }}
+  CSRF_TRUSTED_ORIGINS: {{ if .Values.config.extraCsrfOrigins }}{{ printf "https://%s,%s" .Values.alb.hostname .Values.config.extraCsrfOrigins | quote }}{{ else }}{{ printf "https://%s" .Values.alb.hostname | quote }}{{ end }}
+  DJANGO_SETTINGS_MODULE: "deployment_gui.settings.production"
+  {{- /* Local plain-http deploy: disable HTTPS-only enforcement and re-enable
+         username/password auth so acceptance tests can reach + log into the app. */}}
+  {{- if .Values.config.localHttp }}
+  DJANGO_SECURE_SSL_REDIRECT: "false"
+  DJANGO_SESSION_COOKIE_SECURE: "false"
+  DJANGO_CSRF_COOKIE_SECURE: "false"
+  DJANGO_SECURE_HSTS_SECONDS: "0"
+  DJANGO_SOCIALACCOUNT_ONLY: "false"
+  {{- end }}
+  {{- /* Resource-first (NERD0006): an explicit override (local → the in-cluster proxy)
+         wins; else the cloud API-Gateway URL derived from the deployment-service dep. */}}
+  {{- if .Values.config.deploymentApiUrl }}
+  DEPLOYMENT_API_URL: {{ .Values.config.deploymentApiUrl | quote }}
+  {{- else }}
+  {{- $deploymentServiceInstance := index .Values "dependencies" "deployment-service" "instance_name" }}
+  DEPLOYMENT_API_URL: {{ printf "https://%s-%s-%s.%s-%s-neuronsphere.io" $deploymentServiceInstance .Values.env.HMD_DID .Values.env.HMD_REGION .Values.env.HMD_CUSTOMER_CODE .Values.env.HMD_ENVIRONMENT | quote }}
+  {{- end }}
+  SESSION_COOKIE_AGE: {{ mul (int .Values.config.sessionTimeoutHours) 3600 | quote }}
+  {{- /* Cap gunicorn workers: gunicorn.conf.py sizes to cpu_count()*2+1 (the host core
+         count, ignoring the container CPU limit), so on a many-core node it forks dozens
+         of workers and OOMs. `GUNICORN_WORKERS` is the var it reads. */}}
+  {{- if .Values.config.gunicornWorkers }}
+  GUNICORN_WORKERS: {{ .Values.config.gunicornWorkers | quote }}
+  {{- end }}
+  {{- /* DB name: the bound postgres Resource's output when present, else the cloud
+         db-credentials `details` entry. Host/port/user/pass come from the synced secret. */}}
+  {{- if $pg.database_name }}
+  DB_NAME: {{ $pg.database_name | quote }}
+  {{- else }}
+  DB_NAME: {{ index .Values "details" $dbCredentialsInstance "db_name" | quote }}
+  {{- end }}
+  TELEMETRY_SERVICE_URLS: {{ .Values.config.telemetryServiceUrls | quote }}
+  TELEMETRY_SERVICE_TIMEOUT: {{ .Values.config.telemetryServiceTimeout | quote }}
+  {{- if .Values.config.oktaAuth }}
+  OKTA_GROUP_MAPPING: {{ .Values.config.oktaGroupMapping | quote }}
+  {{- end }}
+  {{- /* Provider-scoped group mapping, keyed by provider_id, so two IdPs can use the
+         same group name for different things. The unscoped OKTA_GROUP_MAPPING above
+         still applies to every provider. Not secret, so it stays in the ConfigMap. */}}
+  {{- if .Values.config.idpGroupMapping }}
+  IDP_GROUP_MAPPING: {{ .Values.config.idpGroupMapping | quote }}
+  {{- end }}
+  {{- if .Values.config.idpSuperuserGroups }}
+  IDP_SUPERUSER_GROUPS: {{ .Values.config.idpSuperuserGroups | quote }}
+  {{- end }}
+  {{- /* MCP server, mounted at /mcp by deployment_gui/asgi.py. It sits beside
+         Django rather than behind it, so Django's ALLOWED_HOSTS and
+         SecurityMiddleware do not cover it -- FastMCP does its own Host/Origin
+         checks from these two lists, derived from the same ALB hostname the
+         Django settings use. Set config.mcpEnabled=false to serve Django alone. */}}
+  MCP_ENABLED: {{ .Values.config.mcpEnabled | default "true" | quote }}
+  MCP_ALLOWED_HOSTS: {{ if .Values.config.extraAllowedHosts }}{{ printf "%s,%s" .Values.alb.hostname .Values.config.extraAllowedHosts | quote }}{{ else }}{{ .Values.alb.hostname | quote }}{{ end }}
+  {{- /* localHttp marks the plain-HTTP local deploy; an https origin there would
+         not match what a client actually sends and FastMCP would reject it. */}}
+  MCP_ALLOWED_ORIGINS: {{ if .Values.config.localHttp }}{{ printf "http://%s" .Values.alb.hostname | quote }}{{ else }}{{ printf "https://%s" .Values.alb.hostname | quote }}{{ end }}
+  {{- /* Public origin of this server, same derivation as the allowed origin above.
+         RemoteAuthProvider builds the RFC 9728 protected-resource document from it,
+         which is how an MCP client discovers where to get a token. */}}
+  MCP_BASE_URL: {{ if .Values.config.localHttp }}{{ printf "http://%s" .Values.alb.hostname | quote }}{{ else }}{{ printf "https://%s" .Values.alb.hostname | quote }}{{ end }}
+  MCP_FEDERATION_ENABLED: {{ .Values.config.mcpFederationEnabled | default "false" | quote }}
+  {{- /* Platform API keys are a local/test credential path; cloud deployments
+         authenticate with Okta bearer tokens instead. localHttp marks the same
+         non-Okta local deploy that re-enables username/password login. */}}
+  MCP_API_KEYS_ENABLED: {{ if .Values.config.localHttp }}"true"{{ else }}{{ .Values.config.mcpApiKeysEnabled | default "false" | quote }}{{ end }}
+  {{- /* The Okta bearer path follows the same switch as the rest of Okta: the
+         verifier validates against OAUTH_PROVIDER_URL, which only reaches the pod
+         when config.oktaAuth is set. With both this and API keys off, and DEBUG
+         false, the server has no way to authenticate anyone and refuses to start. */}}
+  MCP_OKTA_ENABLED: {{ .Values.config.oktaAuth | default false | quote }}
+  {{- if .Values.config.oktaAuth }}
+  {{- /* hmd-ms-deployment verifies a human caller's token against this audience, so
+         it is what makes forwarding the caller's own bearer downstream work. */}}
+  MCP_OKTA_AUDIENCE: {{ .Values.config.mcpOktaAudience | default "api://neuronsphere" | quote }}
+  {{- end }}
+  MCP_DOWNSTREAM_TOKEN_MODE: {{ .Values.config.mcpDownstreamTokenMode | default "passthrough" | quote }}
+  {{- if .Values.config.gunicornWorkerClass }}
+  GUNICORN_WORKER_CLASS: {{ .Values.config.gunicornWorkerClass | quote }}
+  {{- end }}
+  {{- /* Resolves short slugs through ns.oktaGroupName, which reads the
+         okta-app dependency -- absent on the local, non-Okta deploy. */}}
+  {{- if .Values.config.oktaAuth }}
+  OKTA_SUPERUSER_GROUPS: {{ include "ns.oktaSuperuserGroupsResolved" . | quote }}
+  {{- end }}

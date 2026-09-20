@@ -1,0 +1,5 @@
+# RobotFramework core
+robotframework>=6.1.0
+robotframework-browser>=18.0.0
+
+# Browser/Playwright will be installed via rfbrowser init

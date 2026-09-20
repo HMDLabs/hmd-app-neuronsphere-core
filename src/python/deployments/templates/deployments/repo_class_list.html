@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Repo Classes - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Repo Classes</h1>
+        <p class="text-gray-600 mt-1">Browse available repository classes</p>
+    </div>
+
+    <!-- Search -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex space-x-3">
+            <input type="text" name="search" value="{{ search }}"
+                   placeholder="Search repo classes by name, type or summary..."
+                   class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            <button type="submit"
+                    class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Find by capability (NERD004 SPEC005): what can do X, across every class -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-medium text-gray-900">Find by capability</h2>
+            <p class="text-sm text-gray-500 mt-1">Search what every repo class declares it can do &mdash; endpoints, CLI commands, functions, classes and operations from each class's latest manifest.</p>
+        </div>
+        <div class="p-4 space-y-4">
+            <form id="capability-search-form"
+                  hx-get="{% url 'deployments:capability_search' %}"
+                  hx-target="#capability-results"
+                  hx-trigger="submit, change from:#capability-kind"
+                  class="flex flex-wrap gap-3">
+                <input type="text" name="q" id="capability-q"
+                       placeholder="e.g. rotate logs, provision vpc, apply changeset"
+                       class="flex-1 min-w-[16rem] border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+                <select name="kind" id="capability-kind"
+                        class="border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+                    <option value="">Any kind</option>
+                    {% for kind in kind_options %}
+                    <option value="{{ kind }}">{{ kind }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit"
+                        class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">
+                    Find
+                </button>
+            </form>
+            <div id="capability-results">
+                <p class="text-sm text-gray-500">Type what you need done, or pick a capability kind, to search every repo class's declared capabilities.</p>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <p>Unable to load repo classes: {{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Repo Class List -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        {% if repo_classes %}
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Summary</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest Version</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for rc in repo_classes %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap align-top">
+                        <a href="{% url 'deployments:repo_class_detail' rc.repo_class_name %}"
+                           class="font-medium text-ns-electric hover:underline">
+                            {{ rc.repo_class_name }}
+                        </a>
+                        {% if rc.repo_type %}<div class="text-xs text-gray-400">{{ rc.repo_type }}</div>{% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 align-top max-w-xl" {% if rc.summary %}title="{{ rc.summary }}"{% endif %}>
+                        {% if rc.summary %}{{ rc.summary|truncatechars:140 }}{% else %}<span class="text-gray-400">-</span>{% endif %}
+                        {% if rc.capability_count %}<span class="ml-1 text-xs text-gray-400 whitespace-nowrap">&middot; {{ rc.capability_count }} capabilit{{ rc.capability_count|pluralize:"y,ies" }}</span>{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ rc.latest_version|default:"-" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <a href="{% url 'deployments:repo_class_detail' rc.repo_class_name %}"
+                           class="text-ns-electric hover:underline">View Versions</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if repo_classes.has_other_pages %}
+        <div class="px-6 py-4 border-t flex justify-between items-center">
+            <span class="text-sm text-gray-700">
+                Page {{ repo_classes.number }} of {{ repo_classes.paginator.num_pages }}
+            </span>
+            <div class="flex space-x-2">
+                {% if repo_classes.has_previous %}
+                <a href="?page={{ repo_classes.previous_page_number }}{% if search %}&search={{ search }}{% endif %}"
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if repo_classes.has_next %}
+                <a href="?page={{ repo_classes.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="px-6 py-12 text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <p class="mt-2">No repo classes found.</p>
+            {% if search %}
+            <p class="text-sm mt-1">Try a different search term.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% load deployment_tags %}
+{% if draft.content %}
+<ul class="divide-y divide-gray-200">
+    {% for item in draft.content %}
+    {# `v`/`vq` back the instance editor's version picker: `v` seeds from the
+       item's current version so an untouched picker saves it unchanged, and the
+       version rows swapped in from repo_class_versions_results.html bind to it
+       within this item's own Alpine scope. #}
+    <li class="px-6 py-4 hover:bg-gray-50"
+        x-data="{ openPanel: null, depsLoaded: false, instanceLoaded: false,
+                  v: '{{ item.repo_class_version|escapejs }}', vq: '' }">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-3">
+                    <span class="font-medium text-gray-900">{{ item.repo_instance_name }}</span>
+                    <span class="text-gray-500 text-sm">{{ item.repo_class_name }}</span>
+                </div>
+                <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                    <span class="font-mono">v{{ item.repo_class_version }}</span>
+                    <span>ID: {{ item.deployment_id }}</span>
+                </div>
+                {% if item.instance_configuration %}
+                <div class="mt-2 text-xs text-gray-400 font-mono truncate max-w-md">
+                    {{ item.instance_configuration }}
+                </div>
+                {% endif %}
+                {% if item.dependencies %}
+                <div class="mt-2 text-xs text-gray-600 space-y-0.5">
+                    {% for role, target in item.dependencies.items %}
+                    <div>
+                        <span class="font-mono text-gray-500">{{ role }}</span>
+                        <span class="text-gray-400">→</span>
+                        <span class="font-mono">{{ target|dep_display }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="mt-2 text-xs text-gray-400 italic">No dependencies wired.</div>
+                {% endif %}
+            </div>
+            <div class="ml-4 flex items-center space-x-2">
+                <button type="button"
+                        @click="openPanel = (openPanel === 'instance' ? null : 'instance'); if (openPanel === 'instance' && !instanceLoaded) { instanceLoaded = true; }"
+                        class="text-xs text-ns-electric hover:underline px-2 py-1">
+                    <span x-text="openPanel === 'instance' ? 'Close' : 'Edit instance'"></span>
+                </button>
+                <button type="button"
+                        @click="openPanel = (openPanel === 'deps' ? null : 'deps'); if (openPanel === 'deps' && !depsLoaded) { depsLoaded = true; }"
+                        class="text-xs text-ns-electric hover:underline px-2 py-1">
+                    <span x-text="openPanel === 'deps' ? 'Close' : 'Edit dependencies'"></span>
+                </button>
+                <button hx-post="{% url 'deployments:changeset_remove_item' draft_id=draft.pk index=forloop.counter0 %}"
+                        hx-target="#changeset-items"
+                        hx-swap="innerHTML"
+                        hx-confirm="Remove this item from the ChangeSet?"
+                        class="text-red-600 hover:text-red-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div x-show="openPanel === 'instance'" x-cloak class="mt-3 border-t pt-3">
+            <form hx-post="{% url 'deployments:changeset_set_item_instance' draft_id=draft.pk index=forloop.counter0 %}"
+                  hx-target="#changeset-items"
+                  hx-swap="innerHTML"
+                  class="space-y-3">
+                {% csrf_token %}
+                <div id="instance-editor-item-{{ forloop.counter0 }}"
+                     x-init="$watch('instanceLoaded', val => { if (val) htmx.ajax('GET', '{% url 'deployments:changeset_edit_item_instance' draft_id=draft.pk index=forloop.counter0 %}', '#instance-editor-item-{{ forloop.counter0 }}'); })"
+                     class="text-xs text-gray-500">
+                    Loading instance editor...
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" @click="openPanel = null"
+                            class="px-3 py-1.5 text-xs border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-3 py-1.5 text-xs bg-ns-magenta text-white rounded-md hover:bg-ns-navy">
+                        Save instance
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div x-show="openPanel === 'deps'" x-cloak class="mt-3 border-t pt-3">
+            <form hx-post="{% url 'deployments:changeset_set_item_deps' draft_id=draft.pk index=forloop.counter0 %}"
+                  hx-target="#changeset-items"
+                  hx-swap="innerHTML"
+                  class="space-y-3">
+                {% csrf_token %}
+                <div id="dep-picker-item-{{ forloop.counter0 }}"
+                     x-init="$watch('depsLoaded', val => { if (val) htmx.ajax('GET', '{% url 'deployments:changeset_edit_item_deps' draft_id=draft.pk index=forloop.counter0 %}', '#dep-picker-item-{{ forloop.counter0 }}'); })"
+                     class="text-xs text-gray-500">
+                    Loading dependency options...
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" @click="openPanel = null"
+                            class="px-3 py-1.5 text-xs border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-3 py-1.5 text-xs bg-ns-magenta text-white rounded-md hover:bg-ns-navy">
+                        Save dependencies
+                    </button>
+                </div>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="px-6 py-12 text-center text-gray-500">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="mt-2">No changes in this ChangeSet yet.</p>
+    <p class="text-sm">Use the form to add instances.</p>
+</div>
+{% endif %}

@@ -1,0 +1,29 @@
+<!-- Resource dependencies a repo class version requires (suggest_resource_dependencies). -->
+{% if error %}
+<p class="text-xs text-yellow-700">Unable to load resource dependencies: {{ error }}</p>
+{% elif roles %}
+<div class="space-y-2">
+    {% for r in roles %}
+    <div class="border border-gray-200 rounded-md p-2">
+        <div class="flex items-center justify-between">
+            <span class="font-mono text-sm font-medium text-gray-900">{{ r.role }}</span>
+            {% if r.required %}<span class="text-xs text-red-500">required</span>{% endif %}
+        </div>
+        <p class="text-xs text-gray-600 mt-1">
+            Needs
+            {% if r.resource_definition %}
+            <a href="{% url 'deployments:resource_definition_list' %}?namespace={{ r.resource_definition.resource_namespace }}&search={{ r.resource_definition.resource_definition_name }}"
+               class="font-mono text-ns-electric hover:underline">{{ r.resource_definition.resource_namespace }}/{{ r.resource_definition.resource_definition_name }}</a>
+            {% endif %}
+            {% if r.version_spec %}<span class="font-mono">{{ r.version_spec }}</span>{% endif %}
+            {% if r.tag_selector %}<span class="text-gray-500">[{{ r.tag_selector }}]</span>{% endif %}
+        </p>
+        {% if r.suggested_repo_class_name %}
+        <p class="text-xs text-gray-400 mt-0.5">Suggested producer: <span class="font-mono">{{ r.suggested_repo_class_name }}</span></p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-xs text-gray-500">No resource dependencies declared for this version.</p>
+{% endif %}

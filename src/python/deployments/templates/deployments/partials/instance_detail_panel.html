@@ -1,0 +1,122 @@
+{% load deployment_tags %}
+<div class="space-y-6">
+    <!-- Instance Header -->
+    <div>
+        <h3 class="text-lg font-medium text-gray-900">{{ instance_name }}</h3>
+        <p class="text-sm text-gray-500">{{ environment }} environment</p>
+    </div>
+
+    {% if config_error %}
+    <div class="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+        Failed to load configuration: {{ config_error }}
+    </div>
+    {% else %}
+
+    <!-- Details -->
+    <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Details</h4>
+        <div class="bg-gray-50 rounded-md p-3 text-sm space-y-1">
+            <div class="flex justify-between gap-2">
+                <span class="text-gray-500">Repo Class</span>
+                <span class="font-mono text-gray-800 text-right">{{ details.repo_class_name|default:"—" }}</span>
+            </div>
+            <div class="flex justify-between gap-2">
+                <span class="text-gray-500">Version</span>
+                <span class="font-mono text-gray-800 text-right">{{ details.version|default:"—" }}</span>
+            </div>
+            <div class="flex justify-between gap-2">
+                <span class="text-gray-500">Deployment ID</span>
+                <span class="font-mono text-gray-800 text-right truncate">{{ details.deployment_id|default:"—" }}</span>
+            </div>
+            {% if details.hmd_region %}
+            <div class="flex justify-between gap-2">
+                <span class="text-gray-500">Region</span>
+                <span class="font-mono text-gray-800 text-right">{{ details.hmd_region }}</span>
+            </div>
+            {% endif %}
+            {% if details.status %}
+            <div class="flex justify-between items-center gap-2">
+                <span class="text-gray-500">Status</span>
+                <span class="px-2 py-0.5 text-xs rounded-full status-{{ details.status }}">{{ details.status }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Configuration -->
+    <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Configuration</h4>
+        {% if configuration %}
+        <div class="bg-gray-50 rounded-md p-3 overflow-x-auto">
+            {% include "deployments/partials/config_value.html" with value=configuration %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No configuration</p>
+        {% endif %}
+    </div>
+
+    <!-- Dependencies -->
+    <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Dependencies</h4>
+        {% if dependency_rows %}
+        <div class="space-y-2">
+            {% for row in dependency_rows %}
+            {% with badge=row.kind|kind_badge %}
+            <div class="bg-gray-50 rounded-md p-3 text-sm flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <span class="font-mono text-gray-800">{{ row.role }}</span>
+                    <p class="text-xs text-gray-500 truncate">{{ row.targets|join:", " }}</p>
+                </div>
+                <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded border text-[10px] font-semibold {{ badge.classes }}"
+                      title="{{ badge.label }}" aria-label="{{ badge.label }}">
+                    {{ badge.letter }}
+                </span>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No dependencies</p>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+    <!-- Deployment History -->
+    <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Deployment History</h4>
+        {% if history_error %}
+        <div class="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+            Failed to load history: {{ history_error }}
+        </div>
+        {% elif history %}
+        <div class="space-y-2">
+            {% for item in history|slice:":10" %}
+            <div class="bg-gray-50 rounded-md p-3 text-sm">
+                <div class="flex justify-between items-start">
+                    <span class="font-mono text-xs text-gray-700">{{ item.deployment_id|truncatechars:20 }}</span>
+                    <span class="px-2 py-0.5 text-xs rounded-full status-{{ item.status }}">
+                        {{ item.status }}
+                    </span>
+                </div>
+                {% if item.start %}
+                <p class="text-gray-500 text-xs mt-1">{{ item.start }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No deployment history available</p>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    {% if can_deploy %}
+    <div class="pt-4 border-t">
+        <a href="{% url 'deployments:changeset_list' %}?add_instance={{ instance_name }}&repo_class={{ details.repo_class_name }}&version={{ details.version }}&environment={{ environment }}"
+           class="inline-flex items-center px-4 py-2 bg-ns-magenta text-white rounded-md hover:bg-ns-navy text-sm">
+            Add to ChangeSet
+        </a>
+    </div>
+    {% endif %}
+</div>

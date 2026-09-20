@@ -1,0 +1,16 @@
+{% load extension_slots %}
+{% comment %}
+The Review link + Apply button, gated on ``draft.content``. Lives in the page
+header, outside ``#changeset-items``. Included plainly by ``changeset_draft.html``
+and re-emitted with ``oob=True`` by ``changeset_items_response.html`` so it
+refreshes out-of-band after add/remove without a page reload.
+{% endcomment %}
+<div id="cs-header-actions" class="contents"{% if oob %} hx-swap-oob="true"{% endif %}>
+    {% if draft.content %}
+    <a href="{% url 'deployments:changeset_review' draft_id=draft.pk %}"
+       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+        Review
+    </a>
+    {% extension_slot "changeset_actions" %}
+    {% endif %}
+</div>

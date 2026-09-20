@@ -1,0 +1,26 @@
+{% load deployment_tags %}
+{% if results %}
+<div class="border rounded-md divide-y divide-gray-200 bg-white">
+    {% for item in results %}
+    <div class="instance-result flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer transition-colors"
+         x-data
+         data-raw='{{ item|jsonify }}'
+         @click='$dispatch("select-instance", {
+             name: "{{ item.repo_instance_name|escapejs }}",
+             repo_class: "{{ item.repo_class_name|escapejs }}",
+             version: "{{ item.repo_class_version|escapejs }}",
+             deployment_id: "{{ item.deployment_id|default:""|escapejs }}",
+             instance_configuration: (JSON.parse($el.dataset.raw).instance_configuration || {}),
+             dependencies: (JSON.parse($el.dataset.raw).dependencies || {})
+         })'>
+        <div class="min-w-0 flex-1">
+            <span class="font-medium text-sm text-gray-900">{{ item.repo_instance_name }}</span>
+            <span class="text-xs text-gray-500 ml-2">{{ item.repo_class_name }}</span>
+        </div>
+        <span class="text-xs font-mono text-gray-500 ml-2 flex-shrink-0">v{{ item.repo_class_version }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-gray-500 px-1 py-2">No instances found.</p>
+{% endif %}

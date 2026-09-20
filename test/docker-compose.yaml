@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  # PostgreSQL database for Django
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: deployment_gui
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: deployment_gui
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deployment_gui"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Django application under test
+  app:
+    build:
+      context: ..
+      dockerfile: src/docker/Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: deployment_gui.settings.development
+      DJANGO_SECRET_KEY: test-secret-key-for-testing-only
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,app"
+      DEPLOYMENT_API_URL: "${DEPLOYMENT_API_URL:-http://hmd_gateway/hmd_ms_deployment/}"
+      DB_NAME: deployment_gui
+      DB_USER: deployment_gui
+      DB_PASSWORD: testpassword
+      DB_HOST: db
+      DB_PORT: "5432"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py shell -c \"from django.contrib.auth.models import User; User.objects.filter(username='testadmin').exists() or User.objects.create_superuser('testadmin', 'test@example.com', 'testpassword')\" &&
+             python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
