@@ -700,6 +700,13 @@ Review Panel with Color-Coded Changes
 
 A summary view of all changes in a ChangeSet before applying.
 
+.. note::
+
+    The "Apply ChangeSet" action in this wireframe is premium-only and does not
+    apply to the open-core GUI (``hmd-app-neuronsphere-core``) -- see
+    ``hmd-ms-deployment``'s ``docs/proposals/NERD0015_CoreAndPremiumSplit.rst`` for
+    the core/premium boundary. This mockup is kept as historical/premium reference.
+
 .. uml::
 
    @startsalt

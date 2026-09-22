@@ -11,6 +11,14 @@ refreshes out-of-band after add/remove without a page reload.
        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
         Review
     </a>
-    {% extension_slot "changeset_actions" %}
+    {% extension_slot "changeset_actions" as cs_actions %}
+    {% if cs_actions %}
+        {{ cs_actions }}
+    {% else %}
+        <span class="text-xs text-gray-400 italic self-center cursor-help"
+              title="Applying ChangeSets requires the premium NeuronSphere deployment service (hmd-app-neuronsphere + hmd-ms-deployment). To deploy locally, use nsctl env start or hmd deploy --local instead.">
+            Apply unavailable (local build)
+        </span>
+    {% endif %}
     {% endif %}
 </div>

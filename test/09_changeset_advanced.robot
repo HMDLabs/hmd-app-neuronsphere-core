@@ -222,8 +222,9 @@ Edit Instance Version Search Filters Server Side
     Wait For Elements State    \#version-results-0 >> text=No versions    visible    timeout=10s
 
 Draft Page Has No Apply Button On The Core Image
-    [Documentation]    Apply is the premium overlay's changeset_actions slot; the core draft page shows Review only
+    [Documentation]    Apply is the premium overlay's changeset_actions slot; the core draft page shows Review plus a fallback explanation instead
     ${timestamp}=    Evaluate    __import__('time').time()
     Create Draft With Item    no-apply-${timestamp}
     Wait For Elements State    a:has-text("Review")    visible    timeout=5s
     Get Element Count    button:has-text("Apply to DeploymentSet")    ==    0
+    Wait For Elements State    span:has-text("Apply unavailable (local build)")    visible    timeout=5s

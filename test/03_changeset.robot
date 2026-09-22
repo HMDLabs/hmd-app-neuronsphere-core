@@ -216,8 +216,8 @@ Review Page Shows Summary
     Wait For Elements State    h2:has-text("ChangeSet Summary")    visible    timeout=10s
     Wait For Elements State    main >> dd:has-text("summary-test-${timestamp}")    visible
 
-Review Page Has Warning Message
-    [Documentation]    Verify review page shows warning before apply
+Review Page Explains Apply Is Unavailable On The Core Image
+    [Documentation]    Verify review page explains Apply isn't available in open-core, instead of a stale apply warning
     Navigate To ChangeSet Creation
     ${timestamp}=    Evaluate    __import__('time').time()
     Fill ChangeSet Form    warning-test-${timestamp}
@@ -230,7 +230,7 @@ Review Page Has Warning Message
     Wait For HTMX Request
     Reload
     Click    a:has-text("Review")
-    Wait For Elements State    h3:has-text("Before you proceed")    visible    timeout=10s
+    Wait For Elements State    h3:has-text("Apply isn't available in this build")    visible    timeout=10s
 
 New ChangeSet Button On Draft Page
     [Documentation]    Verify New ChangeSet button exists on draft page

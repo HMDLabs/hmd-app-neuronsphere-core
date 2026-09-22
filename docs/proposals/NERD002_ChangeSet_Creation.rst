@@ -67,6 +67,18 @@ Dynamic Configuration Form
 ChangeSet Review and Application
 --------------------------------
 
+.. note::
+
+    Applying a ChangeSet (steps 1-3 below) is premium-only. ``POST
+    /apiop/apply_changeset`` is registered by ``hmd-ms-deployment``'s
+    ``deployment_ops.py`` and is not present in the open-core
+    ``hmd-ms-deployment-core`` service, so this GUI (``hmd-app-neuronsphere-core``)
+    has no view, URL, or API client method that calls it. See
+    ``hmd-ms-deployment``'s ``docs/proposals/NERD0015_CoreAndPremiumSplit.rst`` for
+    the core/premium boundary. The open-core GUI implements drafting, validation,
+    review, clone, reject, and reopen only; the flow below is implemented by the
+    premium overlay, ``hmd-app-neuronsphere``.
+
 .. spec:: Review panel displaying full ChangeSet JSON; apply via modal that chooses a DeploymentSet at apply time.
     :id: HMD_APP_NEURONSPHERE_NERD002_SPEC004
     :status: proposed

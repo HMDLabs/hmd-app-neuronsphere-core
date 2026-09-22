@@ -45,7 +45,15 @@
             </div>
             <div>
                 <dt class="text-sm text-gray-500">Applications</dt>
-                <dd class="font-medium text-gray-900">{% extension_slot "changeset_application_count" %}</dd>
+                <dd class="font-medium text-gray-900">
+                    {% extension_slot "changeset_application_count" as app_count %}
+                    {% if app_count %}
+                        {{ app_count }}
+                    {% else %}
+                        <span class="text-gray-400 italic cursor-help"
+                              title="Applications aren't tracked in this local/open-core build.">&mdash;</span>
+                    {% endif %}
+                </dd>
             </div>
         </dl>
     </div>
@@ -148,6 +156,8 @@
 
     <!-- Primary Actions -->
     {% if draft.content %}
+    {% extension_slot "changeset_review_actions" as review_actions %}
+    {% if review_actions %}
     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div class="flex">
             <svg class="h-5 w-5 text-yellow-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -162,6 +172,28 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="h-5 w-5 text-gray-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-gray-700">Apply isn't available in this build</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    This is the open-core NeuronSphere deployment GUI &mdash; it can draft, validate,
+                    review, and clone ChangeSets, but it cannot apply them. Applying requires the
+                    premium <code class="font-mono text-xs bg-gray-100 px-1 rounded">hmd-app-neuronsphere</code>
+                    GUI and <code class="font-mono text-xs bg-gray-100 px-1 rounded">hmd-ms-deployment</code>
+                    service. To deploy locally instead, use
+                    <code class="font-mono text-xs bg-gray-100 px-1 rounded">nsctl env start</code> or
+                    <code class="font-mono text-xs bg-gray-100 px-1 rounded">hmd deploy --local</code>
+                    &mdash; those deploy directly from the BOM and don't use ChangeSets.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="flex justify-end space-x-3">
         <a href="{% url 'deployments:changeset_draft' draft_id=draft.pk %}"
@@ -172,7 +204,14 @@
                 class="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600">
             Reject
         </button>
-        {% extension_slot "changeset_review_actions" %}
+        {% if review_actions %}
+            {{ review_actions }}
+        {% else %}
+            <span class="self-center text-sm text-gray-400 italic cursor-help"
+                  title="Applying ChangeSets requires the premium NeuronSphere deployment service. Use nsctl env start or hmd deploy --local to deploy locally instead.">
+                Apply unavailable in this build
+            </span>
+        {% endif %}
     </div>
 
     <!-- Secondary Actions -->

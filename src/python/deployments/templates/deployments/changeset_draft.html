@@ -24,7 +24,12 @@
                     {{ draft.get_status_display }}
                 </span>
             </h1>
-            {% extension_slot "changeset_applications" %}
+            {% extension_slot "changeset_applications" as cs_applications %}
+            {% if cs_applications %}
+                {{ cs_applications }}
+            {% else %}
+                <p class="text-xs text-gray-400 mt-1">Applications aren't tracked in this local/open-core build.</p>
+            {% endif %}
         </div>
         <div class="flex space-x-3">
             <form method="post" action="{% url 'deployments:changeset_clone' draft_id=draft.pk %}" class="inline">
