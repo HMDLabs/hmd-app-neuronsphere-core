@@ -1,4 +1,5 @@
 """Unit tests for build_instance_detail_sections -- details/config/dependency split."""
+
 import unittest
 
 from deployments.services.instance_detail import (

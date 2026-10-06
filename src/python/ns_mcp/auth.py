@@ -16,6 +16,7 @@ protected-resource document an MCP client reads to discover where to get a token
 verifier contributes no routes, so an Okta side passed as ``verifiers=[...]`` would
 authenticate but never advertise itself.
 """
+
 import logging
 
 from django.conf import settings

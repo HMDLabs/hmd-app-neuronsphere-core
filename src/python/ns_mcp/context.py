@@ -12,6 +12,7 @@ mandatory rather than stylistic:
   the threadpool hop, per-thread connections accumulate until Postgres refuses
   new ones.
 """
+
 from django.db import close_old_connections
 from fastmcp.server.dependencies import call_sync_fn_in_threadpool
 

@@ -1,4 +1,5 @@
 """Unit tests for the dependency form-parser helper used by the ChangeSet views."""
+
 import unittest
 
 from deployments.services.dependency_roles import (

@@ -1,4 +1,5 @@
 """List deployments from the deployment service."""
+
 from django.core.management.base import BaseCommand, CommandError
 
 from deployments.services.api_client import DeploymentAPIClient

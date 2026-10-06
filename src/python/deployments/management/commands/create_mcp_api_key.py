@@ -3,6 +3,7 @@
 The plaintext key is printed once and is unrecoverable afterwards -- only its
 SHA-256 hash is stored.
 """
+
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone

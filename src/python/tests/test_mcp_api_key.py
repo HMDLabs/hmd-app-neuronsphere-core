@@ -1,4 +1,5 @@
 """Unit tests for MCPApiKey and the verifier that authenticates against it."""
+
 import asyncio
 import unittest
 

@@ -1,4 +1,5 @@
 """Unit tests for build_bom_dag_elements -- Cytoscape node/edge JSON."""
+
 import unittest
 
 from deployments.services.bom_query import (

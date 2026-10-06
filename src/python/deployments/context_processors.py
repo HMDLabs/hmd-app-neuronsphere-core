@@ -1,4 +1,5 @@
 """Context processors for deployment GUI templates."""
+
 import re
 
 from django.conf import settings

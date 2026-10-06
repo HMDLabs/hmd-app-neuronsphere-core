@@ -6,6 +6,7 @@ trail -- rather than any single unit. They are the regression test for the
 WSGI-to-ASGI switch: if Django stops being served, or /mcp stops requiring a
 token, they fail.
 """
+
 import asyncio
 import json
 import unittest

@@ -1,4 +1,5 @@
 """Custom template tags and filters for deployment GUI."""
+
 import json
 
 from django import template

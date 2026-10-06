@@ -8,6 +8,7 @@ anything against the real models.
 So Django is configured here (in-memory SQLite, no external services) and a test
 database is created once per session. Tests that need neither are unaffected.
 """
+
 import os
 
 import django

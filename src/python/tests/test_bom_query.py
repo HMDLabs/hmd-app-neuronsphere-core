@@ -4,6 +4,7 @@
 behaviour they replaced; ``summarize_bom`` and ``reverse_dependency_index`` are
 new, added for the MCP tool layer.
 """
+
 import unittest
 
 from deployments.services.bom_query import (

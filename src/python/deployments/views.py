@@ -1,4 +1,5 @@
 """Views for NeuronSphere Deployment GUI."""
+
 import copy
 import json
 import logging
@@ -1666,9 +1667,7 @@ def api_search_instances(request):
             }
             for item in (response.data or [])
             if query.lower() in item.get("repo_instance_name", "").lower()
-        ][
-            :20
-        ]  # Limit results
+        ][:20]  # Limit results
         return JsonResponse({"results": results})
 
     return JsonResponse({"error": response.error}, status=400)

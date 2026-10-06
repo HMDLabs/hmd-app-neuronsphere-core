@@ -3,6 +3,7 @@
 An in-memory SQLite database and a fixed secret so ``pytest`` needs no
 environment setup. Imported by ``tests/conftest.py``; not used by any deployment.
 """
+
 import os
 
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-not-a-real-secret")

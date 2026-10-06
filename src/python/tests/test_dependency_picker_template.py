@@ -6,6 +6,7 @@ standalone ``django.template.Engine`` (independent of any global TEMPLATES /
 ROOT_URLCONF another test may have configured), stubbing the single ``{% url %}``
 tag so no urlconf is needed — matching the suite's lightweight, no-app style.
 """
+
 import os
 import unittest
 

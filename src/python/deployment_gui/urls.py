@@ -1,4 +1,5 @@
 """URL configuration for NeuronSphere Deployment GUI."""
+
 from importlib import util as importlib_util
 
 from django.conf import settings

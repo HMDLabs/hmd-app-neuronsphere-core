@@ -1,4 +1,5 @@
 """Resource definitions and the repo classes that can provide them."""
+
 from typing import Optional
 
 from fastmcp.exceptions import ToolError

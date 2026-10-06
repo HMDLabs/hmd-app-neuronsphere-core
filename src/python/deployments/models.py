@@ -1,4 +1,5 @@
 """Django models for NeuronSphere Deployment GUI."""
+
 import hashlib
 import secrets
 

@@ -7,6 +7,7 @@ suite runs as a whole, `tests/conftest.py` has already configured Django, so
 tests assert against `settings.*` rather than a hardcoded number -- otherwise
 they would silently depend on which configuration happened to win.
 """
+
 import os
 import sys
 import unittest

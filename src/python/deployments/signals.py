@@ -1,4 +1,5 @@
 """Signal handlers for the deployments app."""
+
 import logging
 
 from allauth.socialaccount.models import SocialAccount

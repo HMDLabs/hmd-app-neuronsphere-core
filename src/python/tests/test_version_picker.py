@@ -14,6 +14,7 @@ Three things are worth pinning:
   to read only ``q``, so typing did nothing), and
 * element ids are scoped per item, since several panels can be open at once.
 """
+
 import unittest
 from unittest import mock
 

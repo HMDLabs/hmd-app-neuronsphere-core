@@ -4,6 +4,7 @@ The core must render every page with no extra app installed and reference
 nothing premium; an extra app must be able to fill a slot with the page's
 context plus its own.
 """
+
 import os
 import sys
 import textwrap

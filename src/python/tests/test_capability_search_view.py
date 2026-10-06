@@ -5,6 +5,7 @@ A catalog read, not environment-scoped: ``login_required`` only, one
 typed a query or picked a kind -- the empty form must not fetch the whole
 catalog on page load.
 """
+
 import unittest
 from unittest import mock
 

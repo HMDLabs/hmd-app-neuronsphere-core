@@ -1,4 +1,5 @@
 """Service for fetching environments from the deployment API."""
+
 import logging
 from typing import List
 

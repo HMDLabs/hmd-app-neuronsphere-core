@@ -1,4 +1,5 @@
 """Environment BOM queries -- what is deployed where."""
+
 from typing import Optional
 
 from deployments.models import AuditLog
@@ -28,8 +29,7 @@ def fetch_bom(ctx, environment: str) -> list:
     response = ctx.client.get_deployment_bom(environment)
     if not response.success:
         raise ToolError(
-            f"Could not read the BOM for environment '{environment}': "
-            f"{response.error}"
+            f"Could not read the BOM for environment '{environment}': {response.error}"
         )
     return response.data if isinstance(response.data, list) else []
 

@@ -3,6 +3,7 @@
 Runs against the real ``AuditLog`` model: the contract that matters is that a
 GUI request and an MCP tool call produce structurally identical rows.
 """
+
 import unittest
 
 from django.contrib.auth.models import AnonymousUser, User

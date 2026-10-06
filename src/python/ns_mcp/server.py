@@ -1,4 +1,5 @@
 """Construction of the FastMCP server mounted at ``/mcp``."""
+
 import logging
 
 from django.conf import settings

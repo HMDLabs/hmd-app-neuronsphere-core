@@ -1,4 +1,5 @@
 """Telemetry service client for environment health checks."""
+
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field

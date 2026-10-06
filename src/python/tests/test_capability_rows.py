@@ -1,6 +1,7 @@
 """``build_capability_rows`` flattens a search_discovery envelope into the
 one-row-per-capability shape the capability search table and the MCP
 ``search_capabilities`` tool share (NERD0013 / NERD004 SPEC005)."""
+
 import unittest
 
 from deployments.services.repo_class_detail import build_capability_rows

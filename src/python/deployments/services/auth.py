@@ -1,4 +1,5 @@
 """Authentication services for API calls."""
+
 import logging
 import os
 from typing import Optional

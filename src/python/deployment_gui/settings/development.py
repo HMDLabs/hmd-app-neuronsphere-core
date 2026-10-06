@@ -1,4 +1,5 @@
 """Development settings for NeuronSphere Deployment GUI."""
+
 import os
 
 from .base import *  # noqa: F401, F403
@@ -32,9 +33,7 @@ else:
 SOCIALACCOUNT_ONLY = False
 
 # Mock deployment API for development
-DEPLOYMENT_API_URL = os.environ.get(
-    "DEPLOYMENT_API_URL", "http://localhost:8080"
-)  # noqa: F405
+DEPLOYMENT_API_URL = os.environ.get("DEPLOYMENT_API_URL", "http://localhost:8080")  # noqa: F405
 
 # CSRF settings for local development
 CSRF_TRUSTED_ORIGINS = [

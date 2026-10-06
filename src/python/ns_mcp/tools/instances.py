@@ -1,4 +1,5 @@
 """A single repo instance: its effective configuration and its dependency edges."""
+
 from fastmcp.exceptions import ToolError
 
 from deployments.models import AuditLog

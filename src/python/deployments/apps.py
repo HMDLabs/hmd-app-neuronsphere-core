@@ -1,4 +1,5 @@
 """App configuration for deployments."""
+
 from django.apps import AppConfig
 
 

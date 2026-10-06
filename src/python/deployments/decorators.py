@@ -1,4 +1,5 @@
 """Decorators for view access control and audit logging."""
+
 import logging
 import time
 import uuid

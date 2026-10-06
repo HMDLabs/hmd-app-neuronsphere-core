@@ -1,4 +1,5 @@
 """Unit tests for the resource query helpers extracted from ``resource_list``."""
+
 import json
 import unittest
 from base64 import b64encode

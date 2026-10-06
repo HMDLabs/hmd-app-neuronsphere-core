@@ -4,6 +4,7 @@ Platform-wide facts, not environment-scoped: neither tool here declares an
 ``environment_arg``, for the same reason ``find_resource_providers`` does not.
 What is *deployed* is describe_environment's job.
 """
+
 from typing import Optional
 
 from fastmcp.exceptions import ToolError
@@ -47,7 +48,7 @@ def search_repo_classes(
 
     items = response.data if isinstance(response.data, list) else []
     matched = filter_repo_classes(items, query)
-    matched = sorted(matched, key=lambda rc: (rc.get("repo_class_name") or ""))
+    matched = sorted(matched, key=lambda rc: rc.get("repo_class_name") or "")
 
     limit = clamp_limit(limit)
     offset = _coerce_offset(offset)

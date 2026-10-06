@@ -1,4 +1,5 @@
 """Update deployment status via the deployment service API."""
+
 from django.core.management.base import BaseCommand, CommandError
 
 from deployments.services.api_client import DeploymentAPIClient

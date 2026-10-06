@@ -27,6 +27,7 @@ Setting ``MCP_ENABLED=false`` serves the bare Django app -- the kill switch, and
 the other half of the rollback lever alongside ``GUNICORN_WORKER_CLASS=sync``
 (``deployment_gui/wsgi.py`` is deliberately kept and unchanged).
 """
+
 import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "deployment_gui.settings.production")

@@ -8,6 +8,7 @@ These tests pin the three things that would silently lock a customer out:
 providers are registered from the JSON list, the legacy single-provider env vars
 still work, and each provider's own groups claim is what gets read.
 """
+
 import importlib
 import json
 import os

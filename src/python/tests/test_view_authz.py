@@ -9,6 +9,7 @@ The denial *shape* is asserted too. ``access_denied.html`` extends ``base.html``
 returning it to a fetch() or swapping it into an HTMX target would turn a correct 403
 into a broken page.
 """
+
 import json
 import unittest
 from unittest import mock

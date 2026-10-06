@@ -12,6 +12,7 @@ from ``tools/list``.
 FastMCP's own registries are async-only, so returning them is how the health
 endpoint and the registry test can see what loaded without an event loop.
 """
+
 import logging
 from importlib import import_module
 

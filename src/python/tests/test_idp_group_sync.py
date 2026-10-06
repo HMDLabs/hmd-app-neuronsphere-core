@@ -5,6 +5,7 @@ outcome an Okta customer gets. The failure modes these pin down are the quiet
 ones: reading the wrong claim yields no groups and therefore no access, and a
 mapping scoped to the wrong provider silently grants nothing.
 """
+
 import pytest
 from django.contrib.auth.models import User
 from django.test import override_settings

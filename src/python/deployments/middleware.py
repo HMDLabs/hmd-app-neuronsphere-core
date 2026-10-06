@@ -11,6 +11,7 @@ session and send the user back through Okta login (a silent SSO round-trip while
 their Okta session is still alive, a full prompt once it isn't) so Okta stays the
 source of truth and revoked/deprovisioned users can't keep operating.
 """
+
 import logging
 from datetime import timedelta
 from urllib.parse import urlencode

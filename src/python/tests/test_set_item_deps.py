@@ -1,4 +1,5 @@
 """Unit tests for preserve_required_deps -- required-role restoration on save."""
+
 import unittest
 
 from deployments.services.dependency_roles import (

@@ -1,4 +1,5 @@
 """Base Django settings for NeuronSphere Deployment GUI."""
+
 import importlib.util
 import json
 import logging
@@ -233,6 +234,7 @@ def groups_claims_for(providers):
 IDP_PROVIDERS = load_idp_providers()
 IDP_GROUPS_CLAIMS = groups_claims_for(IDP_PROVIDERS)
 
+
 # Group-to-environment-role mapping (JSON, provided at deploy time).
 #
 # Provider-scoped form, so two providers can use the same group name for
@@ -250,6 +252,7 @@ def load_json_env(name):
 
 IDP_GROUP_MAPPING = load_json_env("IDP_GROUP_MAPPING")
 OKTA_GROUP_MAPPING = load_json_env("OKTA_GROUP_MAPPING")
+
 
 # Group names whose members are promoted to Django superuser. Membership is
 # reconciled on every login: a user gains is_superuser/is_staff when any of these
@@ -345,6 +348,7 @@ MCP_ALLOWED_ORIGINS = [
 # no Okta token is available. Cloud leaves this off and authenticates with Okta below;
 # a deployment may enable both, in which case either credential is accepted.
 MCP_API_KEYS_ENABLED = _env_flag("MCP_API_KEYS_ENABLED", True)
+
 
 # Bearer tokens, the cloud credential. Verified against the same authorization server
 # the GUI itself logs in against, so none of this needs a secret of its own.

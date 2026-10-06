@@ -4,6 +4,7 @@ Guards the extraction of the two byte-identical inline blocks that previously
 lived in ``views.py`` (``api_repo_class_versions_options`` and
 ``resource_list``): ``build_pagination`` must reproduce them exactly.
 """
+
 import unittest
 
 from deployments.services.pagination import (

@@ -14,6 +14,7 @@ check structural is how this surface avoids acquiring that class of bug in the
 first place, rather than having to go looking for it. ``test_mcp_registry``
 asserts the invariant.
 """
+
 import functools
 import inspect
 import logging

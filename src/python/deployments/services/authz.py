@@ -23,8 +23,7 @@ class EnvironmentAccessDenied(AccessDenied):
     def __init__(self, environment, role_required="viewer"):
         self.environment = environment
         super().__init__(
-            f"You do not have {role_required} access to environment "
-            f"'{environment}'.",
+            f"You do not have {role_required} access to environment '{environment}'.",
             role_required,
         )
 

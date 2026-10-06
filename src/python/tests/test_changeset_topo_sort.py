@@ -4,6 +4,7 @@ Imports ``topological_sort_changeset`` from models.py by loading the function
 bytes directly (regex-extract + exec), so the test runs without booting Django
 or importing django.db — mirroring the approach in test_parse_deps.py.
 """
+
 import os
 import re
 import textwrap

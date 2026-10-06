@@ -5,6 +5,7 @@ rather than each tool body: a new tool that forgets its environment check should
 fail here, not in production. They deliberately assert invariants over whatever
 is registered, so they keep working as tools are added.
 """
+
 import inspect
 import unittest
 

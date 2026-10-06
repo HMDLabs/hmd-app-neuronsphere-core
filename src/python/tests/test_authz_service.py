@@ -4,6 +4,7 @@ These run against the real permission models rather than stubs: the whole point
 of ``services.authz`` is that the GUI decorators and the MCP tools reach the
 same decision, and a stub would only prove the stub agrees with itself.
 """
+
 import unittest
 
 from django.contrib.auth.models import User

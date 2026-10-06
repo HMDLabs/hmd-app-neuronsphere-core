@@ -1,4 +1,5 @@
 """Unit tests for build_role_picker_context -- dependency picker template context."""
+
 import unittest
 
 from deployments.services.dependency_roles import (

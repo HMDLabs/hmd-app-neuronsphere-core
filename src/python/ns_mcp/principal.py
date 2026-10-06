@@ -4,6 +4,7 @@
 context -- it holds no Django objects, so it can be built without touching the
 ORM. The Django ``User`` is loaded later, inside the threadpool hop.
 """
+
 from dataclasses import dataclass
 
 from fastmcp.exceptions import ToolError

@@ -3,13 +3,13 @@
 Bearer tokens for the MCP server where Okta tokens aren't available (local
 development, bender, CI). Only the SHA-256 hash of a key is stored.
 """
+
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("deployments", "0006_pending_schema_drift"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

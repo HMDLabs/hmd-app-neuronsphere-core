@@ -5,6 +5,7 @@ above the `def` line the extraction regex anchors on) from views.py, mirroring
 the approach in test_bom_dag_elements.py. `get_api_client_for_request` is
 stubbed since the view only ever passes `request` through to it.
 """
+
 import os
 import re
 import sys

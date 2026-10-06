@@ -1,4 +1,5 @@
 """Setup configuration for NeuronSphere Deployment GUI."""
+
 from pathlib import Path
 from setuptools import setup, find_packages
 

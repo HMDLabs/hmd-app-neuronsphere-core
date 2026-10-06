@@ -17,6 +17,7 @@ once at startup carries a single downstream identity, but each call should
 forward the *caller's* bearer. Until that is settled, federation stays disabled
 by default.
 """
+
 import logging
 
 from django.conf import settings

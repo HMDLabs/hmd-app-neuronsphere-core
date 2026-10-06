@@ -1,4 +1,5 @@
 """HTTP client for hmd-ms-deployment service."""
+
 import json
 import logging
 from base64 import b64encode

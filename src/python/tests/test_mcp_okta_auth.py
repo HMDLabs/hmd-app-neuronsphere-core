@@ -3,6 +3,7 @@
 Tokens are minted with FastMCP's own ``RSAKeyPair`` and verified against a static
 public key, so nothing here touches a JWKS endpoint or any other network.
 """
+
 import asyncio
 import unittest
 

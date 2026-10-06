@@ -10,6 +10,7 @@ So run this against a token from the environment you are about to enable, and re
 `cid` line. If the client is not trusted downstream, the fix is to register it there
 (hmd-lib-auth NERD001), not to switch MCP_DOWNSTREAM_TOKEN_MODE.
 """
+
 import asyncio
 import base64
 import binascii

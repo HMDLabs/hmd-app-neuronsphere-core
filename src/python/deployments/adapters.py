@@ -7,6 +7,7 @@ group membership*, which comes from settings rather than being hardcoded,
 because the claim name is not universal (Auth0 commonly namespaces it, Entra may
 use ``roles``).
 """
+
 import logging
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter

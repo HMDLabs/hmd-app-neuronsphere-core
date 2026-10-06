@@ -1,4 +1,5 @@
 """Unit tests for BOM diff and instance mapping utilities."""
+
 import importlib.util
 import os
 import sys

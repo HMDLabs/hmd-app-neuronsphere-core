@@ -9,6 +9,7 @@ why the parameter names must match the URI placeholders.
 Resources are the browsable half of the surface: a client that lists resources
 sees the shape of the platform without having to guess at tool arguments.
 """
+
 import json
 
 from fastmcp.exceptions import ToolError

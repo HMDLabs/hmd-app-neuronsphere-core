@@ -1,4 +1,5 @@
 """Unit tests for classify_dependency_roles -- resource vs. repo_class wiring kind."""
+
 import unittest
 
 from deployments.services.dependency_roles import (

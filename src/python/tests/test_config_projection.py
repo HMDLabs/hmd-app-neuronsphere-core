@@ -3,6 +3,7 @@
 Pure shaping, no client and no Django -- the two knobs that let a caller narrow
 a several-hundred-key configuration before it is returned.
 """
+
 import unittest
 
 from deployments.services.config_projection import (

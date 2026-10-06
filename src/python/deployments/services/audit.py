@@ -5,6 +5,7 @@ layer write structurally identical ``AuditLog`` rows. A failure to write an
 audit row is logged and swallowed -- auditing must never break the request it
 is recording.
 """
+
 import logging
 
 logger = logging.getLogger(__name__)

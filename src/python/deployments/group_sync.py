@@ -12,6 +12,7 @@ OKTA_SUPERUSER_GROUPS) still apply to every provider, which preserves existing
 single-provider behaviour exactly and is the migration-friendly reading when a
 second provider is added carrying the same group names.
 """
+
 import logging
 
 from allauth.socialaccount.models import SocialAccount

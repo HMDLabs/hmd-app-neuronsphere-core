@@ -5,6 +5,7 @@ middleware (matches ``test_api_client``). The ``SocialToken``/``SocialAccount``
 lookups and ``logout`` are patched, so these tests need no database or allauth
 app — they exercise only the middleware's branching.
 """
+
 import os
 import sys
 import unittest
@@ -67,9 +68,7 @@ class OktaTokenExpiryMiddlewareTests(unittest.TestCase):
             return_value=self._token(timezone.now() - timedelta(minutes=1)),
         ), mock.patch.object(
             mw, "reverse", return_value="/accounts/login/"
-        ), mock.patch.object(
-            mw, "logout"
-        ) as logout:
+        ), mock.patch.object(mw, "logout") as logout:
             response = self.middleware(request)
 
         logout.assert_called_once_with(request)
@@ -86,9 +85,7 @@ class OktaTokenExpiryMiddlewareTests(unittest.TestCase):
             return_value=self._token(timezone.now() - timedelta(seconds=5)),
         ), mock.patch.object(
             mw, "reverse", return_value="/accounts/login/"
-        ), mock.patch.object(
-            mw, "logout"
-        ):
+        ), mock.patch.object(mw, "logout"):
             response = self.middleware(request)
 
         # HttpResponseClientRedirect is a 200 carrying HX-Redirect, so htmx does
@@ -105,9 +102,7 @@ class OktaTokenExpiryMiddlewareTests(unittest.TestCase):
             return_value=self._token(timezone.now() + timedelta(seconds=10)),
         ), mock.patch.object(
             mw, "reverse", return_value="/accounts/login/"
-        ), mock.patch.object(
-            mw, "logout"
-        ):
+        ), mock.patch.object(mw, "logout"):
             response = self.middleware(request)
 
         self.assertEqual(response.status_code, 302)
@@ -158,9 +153,7 @@ class OktaTokenExpiryMiddlewareTests(unittest.TestCase):
             mw, "get_okta_social_account", return_value=object()
         ), mock.patch.object(
             mw, "reverse", return_value="/accounts/login/"
-        ), mock.patch.object(
-            mw, "logout"
-        ):
+        ), mock.patch.object(mw, "logout"):
             response = self.middleware(request)
 
         self.assertEqual(response.status_code, 302)

@@ -6,6 +6,7 @@ authorization, and auditing are the decorator's job and are covered by
 shaping of the response and, just as much, *how many service calls it takes*:
 ``FakeClient`` counts every call so the tools can be held to their cost budget.
 """
+
 import unittest
 
 from fastmcp.exceptions import ToolError

@@ -5,11 +5,11 @@ change: the index rename follows Django's auto-generated naming, and the two
 ``id`` columns move ``AutoField -> BigAutoField`` to match ``DEFAULT_AUTO_FIELD``.
 They are split out from the MCP migration so each is reviewable on its own.
 """
+
 from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("deployments", "0005_changeset_environment_agnostic"),
     ]

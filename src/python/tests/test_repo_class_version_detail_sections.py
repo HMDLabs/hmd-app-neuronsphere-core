@@ -1,4 +1,5 @@
 """Unit tests for build_repo_class_version_detail_sections."""
+
 import unittest
 
 from deployments.services.repo_class_detail import (

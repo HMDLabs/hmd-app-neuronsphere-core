@@ -1,4 +1,5 @@
 """Django admin configuration for deployments app."""
+
 from django.contrib import admin
 from .models import (
     AuditLog,

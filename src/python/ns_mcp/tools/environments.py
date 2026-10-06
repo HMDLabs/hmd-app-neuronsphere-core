@@ -1,4 +1,5 @@
 """Environment discovery and comparison -- the entry point for any MCP session."""
+
 from fastmcp.exceptions import ToolError
 
 from deployments.models import AuditLog, UserEnvironmentPermission
