@@ -1,5 +1,5 @@
 {{- $dbCredentialsInstance := index .Values "dependencies" "db-credentials" "instance_name" -}}
-{{- $pg := include "ns.resourceOutput" (dict "ctx" . "def" "postgres") | fromJson -}}
+{{- $db := include "ns.dbCredentials" . | fromJson -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -38,10 +38,10 @@ data:
   {{- if .Values.config.gunicornWorkers }}
   GUNICORN_WORKERS: {{ .Values.config.gunicornWorkers | quote }}
   {{- end }}
-  {{- /* DB name: the bound postgres Resource's output when present, else the cloud
+  {{- /* DB name: the db-credentials account Resource's output when present, else the cloud
          db-credentials `details` entry. Host/port/user/pass come from the synced secret. */}}
-  {{- if $pg.database_name }}
-  DB_NAME: {{ $pg.database_name | quote }}
+  {{- if $db.database_name }}
+  DB_NAME: {{ $db.database_name | quote }}
   {{- else }}
   DB_NAME: {{ index .Values "details" $dbCredentialsInstance "db_name" | quote }}
   {{- end }}

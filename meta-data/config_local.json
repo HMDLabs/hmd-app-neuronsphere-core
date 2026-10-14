@@ -94,7 +94,7 @@
           "resource_name": "local-db-deployment_gui",
           "resource_definition": {
             "resource_namespace": "database.neuronsphere.io",
-            "resource_definition_name": "postgres",
+            "resource_definition_name": "database-account",
             "version": "0.1.0"
           },
           "output": {
