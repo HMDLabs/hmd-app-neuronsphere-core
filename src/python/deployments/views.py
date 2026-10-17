@@ -10,6 +10,7 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.http import urlencode
 from django.views.decorators.http import require_GET, require_POST
 
@@ -1718,3 +1719,250 @@ def health_check(request):
         payload["mcp"] = {"enabled": False}
 
     return JsonResponse(payload)
+
+
+# ============== Architecture Views (NERD036) ==============
+
+_ARCHITECTURE_RESERVED = {
+    "environment",
+    "root",
+    "template",
+    "version_spec",
+    "depth",
+    "view_name",
+    "csrfmiddlewaretoken",
+}
+
+
+def _architecture_templates(client):
+    """Registered templates grouped by name, newest version first."""
+    response = client.list_rendering_templates()
+    rows = response.data if response.success and isinstance(response.data, list) else []
+    by_name = {}
+    for row in rows:
+        by_name.setdefault(row.get("template_name"), []).append(row)
+    for versions in by_name.values():
+        versions.sort(
+            key=lambda r: [
+                int(p) if p.isdigit() else 0
+                for p in str(r.get("version", "")).split(".")
+            ],
+            reverse=True,
+        )
+    return by_name, (None if response.success else response.error)
+
+
+def _architecture_request(params, templates):
+    """The render request a form submission describes, and the template's
+    parameter schema."""
+    roots = [r.strip() for r in params.get("root", "").split(",") if r.strip()]
+    name = params.get("template", "").strip()
+    versions = templates.get(name, [])
+    descriptor = (versions[0].get("descriptor") or {}) if versions else {}
+    schema = (descriptor.get("parameters") or {}).get("properties") or {}
+    values = {}
+    for key, prop in schema.items():
+        if key in _ARCHITECTURE_RESERVED:
+            continue
+        raw = params.get(key)
+        if raw is None or raw == "":
+            if "default" in prop:
+                values[key] = prop["default"]
+            continue
+        values[key] = (
+            (raw.lower() in ("true", "on", "1"))
+            if prop.get("type") == "boolean"
+            else raw
+        )
+    try:
+        depth = int(params.get("depth") or 1)
+    except ValueError:
+        depth = 1
+    payload = {
+        "roots": roots,
+        "depth": depth,
+        "template_name": name,
+        "template_version_spec": params.get("version_spec", "").strip() or None,
+        "params": values,
+    }
+    return payload, schema, values
+
+
+def _data_url(media_type, text):
+    from base64 import b64encode
+
+    return f"data:{media_type};base64," + b64encode(text.encode("utf-8")).decode(
+        "ascii"
+    )
+
+
+@login_required
+def architecture(request):
+    """Pick a root and a template, preview the model and its rendering
+    (NERD036 SPEC007)."""
+    from .services.architecture_query import build_architecture_elements
+
+    client = get_api_client_for_request(request)
+    environments = get_user_environments(request.user, client)
+    environment = request.GET.get("environment", "").strip()
+
+    instances = []
+    if environment:
+        bom = client.get_deployment_bom(environment)
+        for row in bom.data if bom.success and isinstance(bom.data, list) else []:
+            instances.append(
+                {
+                    "instance": row.get("repo_instance_name"),
+                    "repo_class": row.get("repo_class_name"),
+                }
+            )
+    classes_response = client.list_repo_classes()
+    repo_classes = sorted(
+        {
+            c.get("repo_class_name")
+            for c in (
+                classes_response.data
+                if classes_response.success and isinstance(classes_response.data, list)
+                else []
+            )
+            if c.get("repo_class_name")
+        }
+    )
+
+    templates, templates_error = _architecture_templates(client)
+    payload, schema, values = _architecture_request(request.GET, templates)
+
+    rendered = None
+    error = templates_error
+    elements = None
+    downloads = []
+    if payload["roots"] and payload["template_name"]:
+        response = client.render_architecture(payload)
+        if response.success:
+            rendered = response.data
+            elements = build_architecture_elements(rendered.get("model", {}))
+            downloads.append(
+                (
+                    "model.json",
+                    _data_url(
+                        "application/json",
+                        json.dumps(rendered.get("model", {}), indent=2),
+                    ),
+                )
+            )
+            for path, text in sorted((rendered.get("outputs") or {}).items()):
+                downloads.append((path, _data_url("text/plain", text)))
+        else:
+            error = response.error
+
+    views_response = client.list_architecture_views()
+    saved_views = (
+        views_response.data
+        if views_response.success and isinstance(views_response.data, list)
+        else []
+    )
+
+    return render(
+        request,
+        "deployments/architecture.html",
+        {
+            "environments": environments,
+            "environment": environment,
+            "instances": instances,
+            "repo_classes": repo_classes,
+            "templates": templates,
+            "request_payload": payload,
+            "root": request.GET.get("root", ""),
+            "parameter_schema": schema,
+            "parameter_values": values,
+            "rendered": rendered,
+            "elements": elements,
+            "downloads": downloads,
+            "saved_views": saved_views,
+            "error": error,
+        },
+    )
+
+
+@login_required
+@require_POST
+def architecture_save(request):
+    """Save the previewed scope and template as a named view (NERD036 SPEC005)."""
+    client = get_api_client_for_request(request)
+    templates, _ = _architecture_templates(client)
+    payload, _, _ = _architecture_request(request.POST, templates)
+    name = request.POST.get("view_name", "").strip()
+    query = urlencode(
+        {
+            k: v
+            for k, v in request.POST.items()
+            if k not in ("csrfmiddlewaretoken", "view_name")
+        }
+    )
+    if not name:
+        messages.error(request, "A view needs a name.")
+        return redirect(f"{reverse('deployments:architecture')}?{query}")
+    view = {
+        "view_name": name,
+        "roots": payload["roots"],
+        "depth": payload["depth"],
+        "template_name": payload["template_name"],
+        "template_version_spec": payload["template_version_spec"],
+        "params": payload["params"],
+    }
+    response = client.upsert_architecture_view(view)
+    if response.success:
+        messages.success(request, f"Saved view {name}")
+    else:
+        messages.error(request, f"Could not save view {name}: {response.error}")
+    return redirect(f"{reverse('deployments:architecture')}?{query}")
+
+
+@login_required
+@require_GET
+def architecture_export(request, name: str):
+    """A documentation folder that fetches the view on every build (NERD036
+    SPEC008): ``docs/index.rst`` with the directive and a README."""
+    import io
+    import zipfile
+
+    client = get_api_client_for_request(request)
+    views_response = client.list_architecture_views()
+    views_list = (
+        views_response.data
+        if views_response.success and isinstance(views_response.data, list)
+        else []
+    )
+    view = next((v for v in views_list if v.get("view_name") == name), None)
+    if view is None:
+        return HttpResponse(
+            f"No saved view named {name}.", status=404, content_type="text/plain"
+        )
+
+    title = view.get("title") or name
+    index = (
+        f".. {title}\n\n"
+        f"{title}\n{'=' * len(title)}\n\n"
+        f".. ns-architecture:: {name}\n"
+    )
+    readme = (
+        f"# {title}\n\n"
+        f"This folder renders the NeuronSphere architecture view `{name}`. Every\n"
+        "build fetches the view's current rendering from the deployment service,\n"
+        "so the document is as current as its build.\n\n"
+        "```sh\n"
+        "export HMD_DEPLOYMENT_API_URL=<the deployment service, e.g. "
+        "http://host.docker.internal:8080/hmd_ms_deployment locally>\n"
+        "export HMD_DEPLOYMENT_API_TOKEN=<a bearer token, if the service needs one>\n"
+        "bartleby html pdf\n"
+        "```\n\n"
+        "Each build caches what it fetched in `docs/.ns-architecture-cache/`; commit\n"
+        "it so a build without the service still has the last rendering.\n"
+    )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("docs/index.rst", index)
+        z.writestr("README.md", readme)
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{name}.zip"'
+    return response

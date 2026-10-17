@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-17
+
+- feat: Architecture page (NERD036, hmd-cli-neuronsphere): pick an environment and a root instance from its BOM (or a repo class), and a rendering template registered in the deployment service, whose parameter schema builds the form; preview the architecture model as a Cytoscape graph (repo classes holding their resources, roles solid, `connects_to` flows dashed) beside each template output, download the model and outputs, save the scope as a named view, and export a docs folder (`docs/index.rst` with `.. ns-architecture:: <view>`, and a README) that fetches the view on every Bartleby build. `test/13_architecture.robot` (6) runs on its own against a live control plane and clears nothing
+
 ## 2026-09-20
 
 - feat: split out of hmd-app-neuronsphere as the core GUI (NERD0015): every view

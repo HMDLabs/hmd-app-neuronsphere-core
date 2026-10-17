@@ -99,5 +99,15 @@
                class="block text-xs py-1 {% if request.path == '/resources/' %}text-ns-electric{% else %}text-gray-300 hover:text-ns-electric{% endif %}">Resources</a>
         </div>
         {% endif %}
+        <a href="{% url 'deployments:architecture' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'architecture' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Architecture' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 5h6v4H4zM14 5h6v4h-6zM9 15h6v4H9zM7 9v3h10V9M12 12v3"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Architecture</span>
+        </a>
     </nav>
 </aside>

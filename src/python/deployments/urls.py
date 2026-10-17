@@ -166,6 +166,14 @@ urlpatterns = [
         name="resource_definition_detail",
     ),
     path("resources/", views.resource_list, name="resource_list"),
+    # NERD036: architecture views
+    path("architecture/", views.architecture, name="architecture"),
+    path("architecture/save/", views.architecture_save, name="architecture_save"),
+    path(
+        "architecture/views/<str:name>/export.zip",
+        views.architecture_export,
+        name="architecture_export",
+    ),
     # API endpoints for HTMX
     path(
         "api/versions/<str:repo_class_name>/",
