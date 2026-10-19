@@ -78,7 +78,33 @@ data:
          RemoteAuthProvider builds the RFC 9728 protected-resource document from it,
          which is how an MCP client discovers where to get a token. */}}
   MCP_BASE_URL: {{ if .Values.config.localHttp }}{{ printf "http://%s" .Values.alb.hostname | quote }}{{ else }}{{ printf "https://%s" .Values.alb.hostname | quote }}{{ end }}
-  MCP_FEDERATION_ENABLED: {{ .Values.config.mcpFederationEnabled | default "false" | quote }}
+  {{- /* MCP gateway (NERD012): route callers to the other MCP servers NeuronSphere
+         hosts, found from mcp.neuronsphere.io/mcp-server Resources in every
+         environment, one logical server each with an `environment` argument limited
+         to the caller's grants. mcpFederationEnabled is the pre-gateway name. */}}
+  MCP_GATEWAY_ENABLED: {{ .Values.config.mcpGatewayEnabled | default .Values.config.mcpFederationEnabled | default "false" | quote }}
+  MCP_GATEWAY_DISCOVERY_ENABLED: {{ .Values.config.mcpGatewayDiscoveryEnabled | default "true" | quote }}
+  {{- if .Values.config.mcpGatewayEndpoints }}
+  MCP_GATEWAY_ENDPOINTS: {{ .Values.config.mcpGatewayEndpoints | quote }}
+  {{- end }}
+  {{- /* Upstream lockdown (NERD012 SPEC007): service-mode upstreams are called with
+         a token the IdP issues to the gateway's own client, scoped to the
+         upstream's environment. The client's id and secret come from
+         mcp-gateway-idp-external-secret.yaml; these are the non-secret parts. The
+         issuer defaults to the SSO provider's; the token endpoint to its OIDC
+         metadata. Auth0 needs mcpGatewayIdpAudience; Okta does not. */}}
+  {{- if .Values.config.mcpGatewayIdpIssuer }}
+  MCP_GATEWAY_IDP_ISSUER: {{ .Values.config.mcpGatewayIdpIssuer | quote }}
+  {{- end }}
+  {{- if .Values.config.mcpGatewayIdpTokenUrl }}
+  MCP_GATEWAY_IDP_TOKEN_URL: {{ .Values.config.mcpGatewayIdpTokenUrl | quote }}
+  {{- end }}
+  {{- if .Values.config.mcpGatewayIdpAudience }}
+  MCP_GATEWAY_IDP_AUDIENCE: {{ .Values.config.mcpGatewayIdpAudience | quote }}
+  {{- end }}
+  {{- if .Values.config.mcpGatewayIdpScope }}
+  MCP_GATEWAY_IDP_SCOPE: {{ .Values.config.mcpGatewayIdpScope | quote }}
+  {{- end }}
   {{- /* Platform API keys are a local/test credential path; cloud deployments
          authenticate with Okta bearer tokens instead. localHttp marks the same
          non-Okta local deploy that re-enables username/password login. */}}

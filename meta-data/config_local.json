@@ -67,6 +67,9 @@
     "localSuperuserPassword": "testpassword",
     "localSuperuserEmail": "testadmin@example.com",
     "createLocalMcpKey": true,
+    "mcpGatewayEnabled": "true",
+    "mcpGatewayEchoFixture": true,
+    "mcpGatewayEndpoints": "echo@dev=http://localhost:8100/mcp;auth=none,echo@test=http://localhost:8100/mcp;auth=none,locked@dev=http://localhost:8100/mcp",
     "localMcpApiKey": "nsmcp_local_bender_key_do_not_use_in_cloud",
     "extraCsrfOrigins": "http://floci-eks-neuronsphere,http://localhost",
     "localHttp": true

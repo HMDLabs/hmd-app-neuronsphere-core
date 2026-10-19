@@ -38,3 +38,4 @@ It also covers browsing the catalog of **repo classes** and their published
    monitoring_a_deployment
    repo_classes
    bundles_and_releases
+   mcp_gateway

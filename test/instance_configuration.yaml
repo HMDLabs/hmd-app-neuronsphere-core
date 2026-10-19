@@ -13,6 +13,9 @@ config:
   extraCsrfOrigins: http://floci-eks-neuronsphere,http://localhost
   gunicornWorkers: '3'
   localHttp: true
+  mcpGatewayEnabled: 'true'
+  mcpGatewayEchoFixture: true
+  mcpGatewayEndpoints: echo@dev=http://localhost:8100/mcp;auth=none,echo@test=http://localhost:8100/mcp;auth=none,locked@dev=http://localhost:8100/mcp
   localSuperuserEmail: testadmin@example.com
   localSuperuserPassword: testpassword
   localSuperuserUsername: testadmin
