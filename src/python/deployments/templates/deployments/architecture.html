@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load static %}
+{% load deployment_tags %}
+
+{% block title %}Architecture - NeuronSphere{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Architecture</h1>
+        <p class="text-gray-600 mt-1">Pick a root and a rendering template, preview the model and what the template draws, then save it as a view documentation can fetch.</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Environment</label>
+                <select name="environment" onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">-- any (repo classes) --</option>
+                    {% for env in environments %}
+                    <option value="{{ env }}" {% if env == environment %}selected{% endif %}>{{ env }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[18rem]">
+                <label class="block text-xs text-gray-500 mb-1">Root{% if environment %} instance{% else %} repo class{% endif %}</label>
+                <select name="root" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">-- select --</option>
+                    {% if environment %}
+                    {% for i in instances %}
+                    <option value="{{ i.repo_class }}" {% if i.repo_class == root %}selected{% endif %}>{{ i.instance }} ({{ i.repo_class }})</option>
+                    {% endfor %}
+                    {% else %}
+                    {% for rc in repo_classes %}
+                    <option value="{{ rc }}" {% if rc == root %}selected{% endif %}>{{ rc }}</option>
+                    {% endfor %}
+                    {% if root and root not in repo_classes %}<option value="{{ root }}" selected>{{ root }}</option>{% endif %}
+                    {% endif %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Template</label>
+                <select name="template" class="border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">-- select --</option>
+                    {% for name, versions in templates.items %}
+                    <option value="{{ name }}" {% if name == request_payload.template_name %}selected{% endif %}>{{ name }} ({{ versions.0.version }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Version spec</label>
+                <input type="text" name="version_spec" value="{{ request_payload.template_version_spec|default_if_none:'' }}" placeholder="~=0.1"
+                       class="w-28 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Depth</label>
+                <input type="number" min="0" max="5" name="depth" value="{{ request_payload.depth }}"
+                       class="w-20 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            {% for key, prop in parameter_schema.items %}
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ key }}</label>
+                {% if prop.enum %}
+                <select name="{{ key }}" class="border border-gray-300 rounded-md px-3 py-2">
+                    {% for option in prop.enum %}
+                    <option value="{{ option }}" {% if option == parameter_values|get_item:key %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <input type="text" name="{{ key }}" value="{{ parameter_values|get_item:key|default_if_none:'' }}"
+                       class="border border-gray-300 rounded-md px-3 py-2">
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">Preview</button>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
+
+    {% if rendered %}
+    <div class="bg-white rounded-lg shadow p-4 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-gray-600">
+                {{ rendered.template_name }} {{ rendered.template_version }} &middot;
+                {{ rendered.model.nodes|length }} nodes &middot; {{ rendered.model.edges|length }} edges
+            </p>
+            <div class="flex flex-wrap gap-2 text-sm">
+                {% for path, href in downloads %}
+                <a href="{{ href }}" download="{{ path }}" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">{{ path }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="architecture-graph" class="w-full h-[32rem] border border-gray-200 rounded"></div>
+        {% if rendered.model.findings %}
+        <ul class="text-sm text-yellow-800 list-disc ml-6">
+            {% for f in rendered.model.findings %}<li>{{ f.message }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% for path, text in rendered.outputs.items %}
+        <div>
+            <h2 class="text-sm font-semibold text-gray-700 mb-1">{{ path }}</h2>
+            <pre data-output="{{ path }}" class="text-xs bg-gray-50 border border-gray-200 rounded p-3 overflow-auto max-h-96">{{ text }}</pre>
+        </div>
+        {% endfor %}
+        <form method="post" action="{% url 'deployments:architecture_save' %}" class="flex flex-wrap items-end gap-3 border-t pt-4">
+            {% csrf_token %}
+            <input type="hidden" name="environment" value="{{ environment }}">
+            <input type="hidden" name="root" value="{{ root }}">
+            <input type="hidden" name="template" value="{{ request_payload.template_name }}">
+            <input type="hidden" name="version_spec" value="{{ request_payload.template_version_spec|default_if_none:'' }}">
+            <input type="hidden" name="depth" value="{{ request_payload.depth }}">
+            {% for key, value in parameter_values.items %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">View name</label>
+                <input type="text" name="view_name" required pattern="[A-Za-z0-9._-]+"
+                       class="border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <button type="submit" class="px-4 py-2 bg-ns-magenta text-white rounded-md">Save view</button>
+        </form>
+    </div>
+    {{ elements|json_script:"architecture-elements" }}
+    {% endif %}
+
+    <div id="saved-views" class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Saved views</h2>
+        {% if saved_views %}
+        <table class="min-w-full text-sm">
+            <thead><tr class="text-left text-gray-500"><th class="py-1">View</th><th>Roots</th><th>Template</th><th></th></tr></thead>
+            <tbody>
+            {% for v in saved_views %}
+            <tr class="border-t">
+                <td class="py-1 font-mono">{{ v.view_name }}</td>
+                <td>{{ v.roots|join:", " }}</td>
+                <td>{{ v.template_name }} {{ v.template_version_spec|default_if_none:"" }}</td>
+                <td class="text-right"><a class="text-ns-electric hover:underline" href="{% url 'deployments:architecture_export' v.view_name %}">Export docs folder</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-sm text-gray-500">No saved views yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if rendered %}
+<script src="{% static 'deployments/js/architecture_graph.js' %}"></script>
+<script>initArchitectureGraph("architecture-graph", "architecture-elements");</script>
+{% endif %}
+{% endblock %}

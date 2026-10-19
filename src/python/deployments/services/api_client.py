@@ -807,6 +807,40 @@ class DeploymentAPIClient:
             params=params or None,
         )
 
+    # ========== Architecture views (NERD036) ==========
+
+    def list_rendering_templates(self) -> APIResponse:
+        """Every registered rendering template version.
+
+        GET /apiop/list_rendering_templates
+        """
+        return self._make_request("GET", "/apiop/list_rendering_templates")
+
+    def render_architecture(self, payload: Dict[str, Any]) -> APIResponse:
+        """Render a scope with a registered template.
+
+        POST /apiop/render_architecture
+        """
+        return self._make_request(
+            "POST", "/apiop/render_architecture", json_data=payload
+        )
+
+    def upsert_architecture_view(self, payload: Dict[str, Any]) -> APIResponse:
+        """Save a named architecture view.
+
+        POST /apiop/upsert_architecture_view
+        """
+        return self._make_request(
+            "POST", "/apiop/upsert_architecture_view", json_data=payload
+        )
+
+    def list_architecture_views(self) -> APIResponse:
+        """Every saved architecture view.
+
+        GET /apiop/list_architecture_views
+        """
+        return self._make_request("GET", "/apiop/list_architecture_views")
+
     # ========== Cache Management ==========
 
     def invalidate_bom_cache(self, environment_type: str) -> None:
