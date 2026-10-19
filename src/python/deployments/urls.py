@@ -155,6 +155,25 @@ urlpatterns = [
         views.repo_class_version_detail,
         name="repo_class_version_detail",
     ),
+    # Bundles and Releases (read-only catalog; NERD009 / NERD011)
+    path("bundles/", views.bundle_list, name="bundle_list"),
+    path("bundles/<str:bundle_name>/", views.bundle_detail, name="bundle_detail"),
+    path(
+        "bundles/<str:bundle_name>/versions/<str:version>/",
+        views.bundle_version_detail,
+        name="bundle_version_detail",
+    ),
+    path("releases/", views.release_list, name="release_list"),
+    path(
+        "releases/<str:release_name>/versions/<str:version>/",
+        views.release_version_detail,
+        name="release_version_detail",
+    ),
+    path(
+        "releases/<str:release_name>/versions/<str:version>/status/",
+        views.release_install_status_partial,
+        name="release_install_status_partial",
+    ),
     # Resources (read-only browse of the NERD0004/0006 resource model)
     path(
         "resources/definitions/",

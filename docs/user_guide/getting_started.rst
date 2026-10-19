@@ -45,6 +45,9 @@ The sidebar contains:
 - **Change Sets** — list and create ChangeSets.
 - **Deployments** — deployment history and status.
 - **Repo Classes** — browse the catalog of repo classes and their versions.
+- **Bundles** — browse bundles, their versions and declared roles.
+- **Releases** — browse releases, their evidence and pins, and (on a customer's
+  control plane) their arrival status.
 
 Use the hamburger button in the top bar to collapse or expand the sidebar; the
 choice is remembered between visits.

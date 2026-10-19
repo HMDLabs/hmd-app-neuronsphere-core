@@ -1,0 +1,34 @@
+{% comment %}Arrival of a release's artifacts on a receiving control plane (NERD011 SPEC005).
+Polls only while something is still arriving: a settled report renders without a trigger.{% endcomment %}
+<div id="release-arrival"
+     {% if arrival.polling %}hx-get="{% url 'deployments:release_install_status_partial' release_name version %}"
+     hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}
+     class="space-y-3">
+    {% if error %}
+    <p class="text-sm text-yellow-700">Unable to read arrival status: {{ error }}</p>
+    {% elif arrival.state == "unknown" %}
+    <p class="text-sm text-gray-500">Not received on this control plane.</p>
+    {% else %}
+    <p class="text-sm">
+        {% if arrival.state == "installed" %}
+        <span class="px-2 py-1 rounded bg-green-100 text-green-800 font-medium">Installed</span>
+        {% elif arrival.state == "blocked" %}
+        <span class="px-2 py-1 rounded bg-red-100 text-red-800 font-medium">Blocked</span>
+        {% else %}
+        <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 font-medium">Arriving</span>
+        {% endif %}
+        <span class="ml-2 text-gray-600">{{ arrival.present }} of {{ arrival.total }} artifacts present</span>
+    </p>
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <tbody class="divide-y divide-gray-100">
+            {% for e in install_report.entries %}
+            <tr>
+                <td class="py-1 pr-4 font-mono text-gray-900">{{ e.repo_class_name }}</td>
+                <td class="py-1 pr-4 font-mono text-gray-600">{{ e.version }}</td>
+                <td class="py-1 {% if e.status == 'present' %}text-green-700{% elif e.status == 'digest_mismatch' %}text-red-700{% else %}text-gray-500{% endif %}">{{ e.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>

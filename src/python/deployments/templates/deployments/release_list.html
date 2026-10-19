@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load extension_slots %}
+
+{% block title %}Releases - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Releases</h1>
+            <p class="text-gray-600 mt-1">Tested combinations of versions, cut by a publisher and installed by a customer</p>
+        </div>
+        <div class="flex gap-2">{% extension_slot "releases_header_actions" %}</div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex flex-wrap gap-3">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search name..."
+                   class="flex-1 min-w-[12rem] border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            <button type="submit" class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">Filter</button>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <p>Unable to load releases: {{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        {% if releases %}
+        <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Release</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kind</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Newest verified</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Newest released</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Newest installed</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                {% for r in releases %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap font-mono font-medium text-gray-900">{{ r.release_name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{% if r.kind == "platform" %}Platform{% else %}Bundle{% endif %}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-mono">{% if r.newest_by_status.verified %}<a class="text-ns-electric hover:underline" href="{% url 'deployments:release_version_detail' r.release_name r.newest_by_status.verified %}"><span class="sr-only">verified </span>{{ r.newest_by_status.verified }}</a>{% else %}-{% endif %}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-mono">{% if r.newest_by_status.released %}<a class="text-ns-electric hover:underline" href="{% url 'deployments:release_version_detail' r.release_name r.newest_by_status.released %}"><span class="sr-only">released </span>{{ r.newest_by_status.released }}</a>{% else %}-{% endif %}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-mono">{% if r.newest_installed %}<a class="text-ns-electric hover:underline" href="{% url 'deployments:release_version_detail' r.release_name r.newest_installed %}">{{ r.newest_installed }}</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if releases.has_other_pages %}
+        <div class="px-6 py-4 border-t flex justify-between items-center">
+            <span class="text-sm text-gray-700">Page {{ releases.number }} of {{ releases.paginator.num_pages }}</span>
+            <div class="flex space-x-2">
+                {% if releases.has_previous %}<a href="?page={{ releases.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>{% endif %}
+                {% if releases.has_next %}<a href="?page={{ releases.next_page_number }}{% if search %}&search={{ search }}{% endif %}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="px-6 py-12 text-center text-gray-500"><p class="mt-2">No releases found.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

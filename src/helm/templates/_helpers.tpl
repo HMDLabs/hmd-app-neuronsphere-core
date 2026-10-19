@@ -60,32 +60,75 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-NERD0006 resource-output lookup (mirrors hmd_cli_helm._resource_output): walk every
-dependency role's produced `hmd_resources` and return the `output` of the first Resource
+NERD0006 resource-output lookup (mirrors hmd_cli_helm._resource_output), scoped to one
+dependency role: return the `output` of the first Resource in that role's `hmd_resources`
 whose ResourceDefinition name matches, as JSON. Empty JSON object when none is present, so
 callers can `fromJson` and test for keys and fall back to the cloud (dependency-chain) path.
 
-Usage: $pg := include "ns.resourceOutput" (dict "ctx" . "def" "postgres") | fromJson
+Scoped to a role on purpose: a role receives every Resource its bound instance produced,
+and other roles can carry Resources of the same type (the environment's shared postgres,
+for one). Scanning every role let any of them supply this chart's values.
+
+Usage: $ic := include "ns.resourceOutput" (dict "ctx" . "role" "eks-alb" "def" "ingress-controller") | fromJson
 */}}
 {{- define "ns.resourceOutput" -}}
 {{- $ctx := .ctx -}}
 {{- $target := .def -}}
 {{- $found := dict -}}
-{{- range $role, $dep := ($ctx.Values.dependencies | default dict) -}}
+{{- $dep := index ($ctx.Values.dependencies | default dict) .role | default dict -}}
 {{- $items := $dep -}}
 {{- if not (kindIs "slice" $items) -}}{{- $items = list $items -}}{{- end -}}
 {{- range $item := $items -}}
-{{- if kindIs "map" $item -}}
+{{- if and (kindIs "map" $item) (not $found) -}}
 {{- range $res := (index $item "hmd_resources" | default list) -}}
 {{- $rd := (index $res "resource_definition") | default dict -}}
-{{- if eq (index $rd "resource_definition_name") $target -}}
+{{- if and (not $found) (eq (index $rd "resource_definition_name") $target) -}}
 {{- $found = (index $res "output") | default dict -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
-{{- end -}}
 {{- $found | toJson -}}
+{{- end -}}
+
+{{/*
+The database account bound to the db-credentials role, as JSON `{secret_name, database_name}`;
+an empty object means "use the cloud dependency chain" (db-credentials.dependencies.database-instance
+plus details.<instance>.db_name). Fails the render rather than guessing:
+
+- A `database-account` Resource (hmd-database-account), or a per-database `postgres` Resource
+  (the legacy local dev_db.py producer), qualifies only with both `database_name` and
+  `secret_name`. The environment's shared postgres (environment-db) carries the admin secret
+  and no `database_name`, so it never qualifies -- binding it rendered an ExternalSecret on
+  the admin credential and an empty DB_NAME, and the pods never started.
+- Neither a qualifying Resource nor the cloud chain: nothing to build a secret name from.
+*/}}
+{{- define "ns.dbCredentials" -}}
+{{- $dep := index (.Values.dependencies | default dict) "db-credentials" | default dict -}}
+{{- $found := dict -}}
+{{- $bound := list -}}
+{{- range $res := (index $dep "hmd_resources" | default list) -}}
+{{- $rd := (index $res "resource_definition") | default dict -}}
+{{- $def := index $rd "resource_definition_name" | default "" -}}
+{{- $out := (index $res "output") | default dict -}}
+{{- $bound = append $bound (printf "%s (%s/%s; outputs: %s)" (index $res "resource_name" | default "?") (index $rd "resource_namespace" | default "?") $def (keys $out | sortAlpha | join ", ")) -}}
+{{- if and (not $found) (has $def (list "database-account" "postgres")) $out.database_name $out.secret_name -}}
+{{- $found = dict "secret_name" $out.secret_name "database_name" $out.database_name "kind" $def -}}
+{{- end -}}
+{{- end -}}
+{{- if $found -}}
+{{- $found | toJson -}}
+{{- else -}}
+{{- $dbInstance := index ($dep.dependencies | default dict) "database-instance" -}}
+{{- $details := index (.Values.details | default dict) ($dep.instance_name | default "") | default dict -}}
+{{- if and $dbInstance $details.db_name -}}
+{{- dict | toJson -}}
+{{- else if $bound -}}
+{{- fail (printf "db-credentials: no bound Resource is a database account with database_name and secret_name. Bound: %s. A shared Postgres instance's Resource (admin credentials, no database_name) is not a per-app database -- bind db-credentials to an hmd-database-account instance." (join "; " $bound)) -}}
+{{- else -}}
+{{- fail "db-credentials: nothing bound. Expected a database-account Resource (hmd-database-account) in dependencies.db-credentials.hmd_resources, or the cloud chain dependencies.db-credentials.dependencies.database-instance with details.<instance>.db_name." -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -95,7 +138,7 @@ Traefik's `traefik`); else fall back to `.Values.alb.className` (default "alb" f
 cloud AWS Load Balancer Controller). Lets one chart target either controller.
 */}}
 {{- define "ns.ingressClass" -}}
-{{- $ic := include "ns.resourceOutput" (dict "ctx" . "def" "ingress-controller") | fromJson -}}
+{{- $ic := include "ns.resourceOutput" (dict "ctx" . "role" "eks-alb" "def" "ingress-controller") | fromJson -}}
 {{- if $ic.ingress_class -}}
 {{- $ic.ingress_class -}}
 {{- else -}}
@@ -105,13 +148,13 @@ cloud AWS Load Balancer Controller). Lets one chart target either controller.
 
 {{/*
 Kubernetes secret name for database credentials, synced by hmd-db-external-secret.yaml.
-Resource-first (NERD0006): when a `postgres` Resource is bound to the db-credentials role,
-use a stable chart-scoped name; otherwise fall back to the cloud db-credentials chain so
-cloud deploys are unchanged.
+Resource-first (NERD0006): when ns.dbCredentials finds the db-credentials account Resource,
+use a stable chart-scoped name; otherwise the cloud db-credentials chain, so cloud deploys
+are unchanged.
 */}}
 {{- define "k8sDbSecretName" -}}
-{{- $pg := include "ns.resourceOutput" (dict "ctx" . "def" "postgres") | fromJson -}}
-{{- if $pg.secret_name -}}
+{{- $db := include "ns.dbCredentials" . | fromJson -}}
+{{- if $db.secret_name -}}
 {{- printf "%s-db" (include "hmd-app-neuronsphere.fullname" .) -}}
 {{- else -}}
 {{- $dbCredentialsInstance := index .Values "dependencies" "db-credentials" "instance_name" -}}
@@ -128,16 +171,48 @@ cloud deploys are unchanged.
 {{- end -}}
 
 {{/*
-Secrets-manager key holding the DB credential. Resource-first: the postgres Resource's
-`output.secret_name`; else the cloud underscore-separated db-credentials chain.
+Secrets-manager key holding the DB credential. Resource-first: the db-credentials account
+Resource's `output.secret_name`; else the cloud underscore-separated db-credentials chain.
 */}}
 {{- define "awsDbSecretName" -}}
-{{- $pg := include "ns.resourceOutput" (dict "ctx" . "def" "postgres") | fromJson -}}
-{{- if $pg.secret_name -}}
-{{- $pg.secret_name -}}
+{{- $db := include "ns.dbCredentials" . | fromJson -}}
+{{- if $db.secret_name -}}
+{{- $db.secret_name -}}
 {{- else -}}
 {{- $dbCredentialsInstance := index .Values "dependencies" "db-credentials" "instance_name" -}}
 {{ index .Values "dependencies" "db-credentials" "dependencies" "database-instance" "instance_name" }}_{{ index .Values "dependencies" "db-credentials" "dependencies" "database-instance" "repo_name" }}_{{ index .Values "dependencies" "db-credentials" "dependencies" "database-instance" "deployment_id" }}_{{ .Values.env.HMD_ENVIRONMENT }}_{{ .Values.env.HMD_REGION }}_{{ .Values.env.HMD_CUSTOMER_CODE }}_{{ index .Values "details" $dbCredentialsInstance "db_name" }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+ClusterSecretStore the DB credential is read through. Where the secret lives depends on
+who wrote it:
+
+- A `database-account` Resource: hmd-ms-dbaccount wrote it with hmd_lib_secrets_backend,
+  which stores account secrets in SSM Parameter Store (and migrates older Secrets Manager
+  copies there on every create). Reading it through the Secrets Manager store gives
+  "Secret does not exist" although the account exists (relpub, 2026-10-14).
+- The cloud dependency chain: unchanged (ns.secretStoreName), unless
+  `platformSecretStore=parameterStoreSecretStore` -- the same knob hmd-inf-hive-metastore
+  uses for an environment whose account secrets exist only in Parameter Store.
+- A legacy per-database `postgres` Resource (dev_db.py): Secrets Manager, as before.
+
+Parameter Store name: `.Values.parameterStoreSecretStore.name`, else the ext-secrets
+dependency's detail, else hmd-inf-ext-secrets' default `aws-parameter-store`.
+*/}}
+{{- define "ns.dbSecretStoreName" -}}
+{{- $db := include "ns.dbCredentials" . | fromJson -}}
+{{- if or (eq ($db.kind | default "") "database-account") (and (not $db.secret_name) (eq (.Values.platformSecretStore | default "") "parameterStoreSecretStore")) -}}
+{{- $name := "" -}}
+{{- if .Values.parameterStoreSecretStore -}}{{- $name = .Values.parameterStoreSecretStore.name | default "" -}}{{- end -}}
+{{- if not $name -}}
+{{- $extSecrets := index (.Values.dependencies | default dict) "ext-secrets" | default dict -}}
+{{- $details := index (.Values.details | default dict) ($extSecrets.instance_name | default "") | default dict -}}
+{{- $name = (index $details "parameterStoreSecretStore" | default dict).name | default "aws-parameter-store" -}}
+{{- end -}}
+{{- $name -}}
+{{- else -}}
+{{- include "ns.secretStoreName" . -}}
 {{- end -}}
 {{- end -}}
 

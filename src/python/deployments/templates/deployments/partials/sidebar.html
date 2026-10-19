@@ -80,6 +80,30 @@
             <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Repo Classes</span>
         </a>
 
+        <!-- Bundles -->
+        <a href="{% url 'deployments:bundle_list' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'bundles' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Bundles' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 7v10c0 2 8 4 8 4s8-2 8-4V7M4 7c0 2 8 4 8 4s8-2 8-4M4 7c0-2 8-4 8-4s8 2 8 4"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Bundles</span>
+        </a>
+
+        <!-- Releases -->
+        <a href="{% url 'deployments:release_list' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'releases' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Releases' : ''">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 7h.01M7 3h5c.5 0 1 .2 1.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 013 8V5a2 2 0 012-2z"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Releases</span>
+        </a>
+
         <!-- Resource Definitions -->
         <a href="{% url 'deployments:resource_definition_list' %}"
            class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors

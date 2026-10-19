@@ -29,6 +29,7 @@ from .models import (
     sanitize_changeset_item,
 )
 from .services.auth import get_api_client_for_request
+from .services.bundle_detail import role_rows
 from .services.bom_query import (
     bom_facets,
     build_bom_dag_elements as _build_bom_dag_elements,
@@ -46,6 +47,13 @@ from .services.instance_detail import (
     INSTANCE_METADATA_KEYS as _INSTANCE_METADATA_KEYS,
     build_instance_detail_sections as _build_instance_detail_sections,
 )
+from .services.release_detail import (
+    arrival_summary,
+    carried_forward,
+    evidence_level,
+    pin_rows,
+)
+from .services.release_evidence import release_evidence
 from .services.pagination import (
     build_pagination,
     offset_for_page,
@@ -1717,3 +1725,152 @@ def health_check(request):
         payload["mcp"] = {"enabled": False}
 
     return JsonResponse(payload)
+
+
+# ============== Bundle and Release Catalog (NERD009 / NERD011) ==============
+#
+# Platform-wide reads, like the repo-class catalog: login only, never
+# environment-scoped. Actions on a release (cut, promote, ship, plan) are not
+# here; a premium app fills the ``release_actions`` slots.
+
+
+def _search_filter(rows, search, *fields):
+    if not search:
+        return rows
+    return [
+        r for r in rows if any(search in str(r.get(f) or "").lower() for f in fields)
+    ]
+
+
+@login_required
+def bundle_list(request):
+    """Browse registered Bundles (NERD009 SPEC001). Pagination uses ``page``."""
+    client = get_api_client_for_request(request)
+    search = request.GET.get("search", "").strip().lower()
+    response = client.list_bundles()
+    bundles, error = [], None
+    if response.success and response.data:
+        bundles = _search_filter(
+            response.data if isinstance(response.data, list) else [],
+            search,
+            "bundle_name",
+            "summary",
+        )
+    elif not response.success:
+        error = response.error
+    page = Paginator(bundles, 50).get_page(request.GET.get("page", 1))
+    return render(
+        request,
+        "deployments/bundle_list.html",
+        {"bundles": page, "search": search, "error": error},
+    )
+
+
+@login_required
+def bundle_detail(request, bundle_name: str):
+    """One Bundle and its versions, newest first."""
+    client = get_api_client_for_request(request)
+    response = client.list_bundle_versions(bundle_name)
+    versions = response.data if response.success and response.data else []
+    return render(
+        request,
+        "deployments/bundle_detail.html",
+        {
+            "bundle_name": bundle_name,
+            "versions": versions,
+            "error": response.error if not response.success else None,
+        },
+    )
+
+
+@login_required
+def bundle_version_detail(request, bundle_name: str, version: str):
+    """A Bundle version's declared roles and configuration schema."""
+    client = get_api_client_for_request(request)
+    response = client.get_bundle_version(bundle_name, version=version)
+    detail = response.data if response.success else None
+    return render(
+        request,
+        "deployments/bundle_version_detail.html",
+        {
+            "bundle_name": bundle_name,
+            "version": version,
+            "detail": detail,
+            "roles": role_rows(detail.get("roles")) if detail else [],
+            "error": response.error if not response.success else None,
+        },
+    )
+
+
+@login_required
+def release_list(request):
+    """Browse Releases (NERD011 SPEC002): bundle and platform releases, with
+    the newest version per status and the newest installed."""
+    client = get_api_client_for_request(request)
+    search = request.GET.get("search", "").strip().lower()
+    response = client.list_releases()
+    releases, error = [], None
+    if response.success and response.data:
+        releases = _search_filter(
+            response.data if isinstance(response.data, list) else [],
+            search,
+            "release_name",
+        )
+    elif not response.success:
+        error = response.error
+    page = Paginator(releases, 50).get_page(request.GET.get("page", 1))
+    return render(
+        request,
+        "deployments/release_list.html",
+        {"releases": page, "search": search, "error": error},
+    )
+
+
+@login_required
+def release_version_detail(request, release_name: str, version: str):
+    """A Release version: evidence, pins, notes, included releases and, on a
+    receiving control plane, per-artifact arrival (NERD011 SPEC002/SPEC005)."""
+    client = get_api_client_for_request(request)
+    response = client.get_release_version(release_name, version=version)
+    detail = response.data if response.success else None
+    context = {
+        "release_name": release_name,
+        "version": version,
+        "detail": detail,
+        "error": response.error if not response.success else None,
+    }
+    if detail:
+        siblings = client.list_release_versions(release_name)
+        context.update(
+            evidence_level=evidence_level(detail),
+            carried_forward=carried_forward(detail),
+            pins=pin_rows(detail),
+            arrival=arrival_summary(detail.get("install_report")),
+            install_report=detail.get("install_report"),
+            release_evidence=release_evidence(detail),
+            sibling_versions=siblings.data
+            if siblings.success and siblings.data
+            else [],
+        )
+    return render(request, "deployments/release_version_detail.html", context)
+
+
+@login_required
+@require_GET
+def release_install_status_partial(request, release_name: str, version: str):
+    """HTMX partial: the arrival report recomputed now (never written), polling
+    only while an artifact is still arriving."""
+    client = get_api_client_for_request(request)
+    response = client.release_install_status(release_name, version, refresh=True)
+    report = response.data if response.success else None
+    return render(
+        request,
+        "deployments/partials/release_arrival.html",
+        {
+            "release_name": release_name,
+            "version": version,
+            "install_report": report,
+            "arrival": arrival_summary(report),
+            "error": response.error if not response.success else None,
+        },
+    )

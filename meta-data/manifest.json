@@ -64,9 +64,13 @@
         "version_spec": "~= 0.1",
         "resource": {
           "resource_namespace": "database.neuronsphere.io",
-          "resource_definition_name": "postgres",
+          "resource_definition_name": "database-account",
           "version": "0.1.0",
-          "version_spec": "~= 0.1"
+          "version_spec": "~= 0.1",
+          "required_outputs": [
+            "database_name",
+            "secret_name"
+          ]
         }
       },
       "eks-cluster": {

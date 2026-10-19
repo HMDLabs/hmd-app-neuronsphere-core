@@ -21,6 +21,53 @@ NERD009 Bundle GUI and MCP Surface
     ``ChangeSet``, no matter how convenient a one-call "just deploy it" tool would be for an
     agent to use.
 
+Revision 2026-10-05: reuse is a decision, and the open-core split
+-----------------------------------------------------------------
+
+``NERD0010_HMD_MS_DEPLOYMENT`` is now implemented, and two things it settled change this
+document.
+
+**Reuse is a decision the operator makes, not a default the GUI reviews.** The service no longer
+auto-reuses. A deployed instance that overlaps a role -- the same ``repo_class_name``, or providing
+the role's ``resource`` -- is a *candidate*, and the role is ``decision_required`` until the caller
+passes ``overrides.<role>.reuse`` (an instance) or ``overrides.<role>.new`` (deploy anyway,
+optionally under ``instance_name``). ``POST /apiop/find_bundle_reuse`` reports, per role, the
+candidates (each with ``matched_by`` -- ``repo_class`` / ``resource`` -- version and status), the
+roles awaiting a decision, and the reusable ones, without generating anything. Roles also carry
+``provision`` (``"false"``: reuse-only shared infrastructure, never provisioned, its single
+candidate taken), ``dedicated`` (``"true"``: the bundle's own bucket or credentials, no
+candidates) and list-valued ``bind``. Consequently:
+
+- **SPEC002 gains a decision step.** ``bundle_deploy_preview`` first calls ``find_bundle_reuse``
+  and renders a *decisions* form -- one row per role with candidates: reuse which instance, or
+  deploy new under what name -- pre-filled for roles that need none (own-name reuse, a reuse-only
+  role's single candidate). Only when every ``decision_required`` role is answered does it call
+  ``generate_bundle_changeset`` with those ``overrides`` and create the ``ChangeSetDraft``. A
+  required reuse-only role with no candidate (a lower layer not yet deployed) is shown as
+  blocking, naming the bundle that provides it, rather than offered as "deploy new".
+- **SPEC003 records decisions instead of offering to undo auto-reuse.** ``bundle_metadata`` stores
+  the ``overrides`` the operator chose alongside the ``resolution``; the review partial shows them
+  as the operator's decisions. Changing one returns to SPEC002's decision step -- the draft's
+  definition is regenerated, not edited by hand.
+- **SPEC005** adds ``find_bundle_reuse``; registration moved from per-bundle ``hmd-bundle-*`` repos
+  to ``hmd-bundle-core`` (``meta-data/bundles/*.json``, ``upsert_bundle_versions``) and remains
+  outside the GUI.
+- **SPEC006/SPEC007:** ``describe_bundle`` shows ``provision`` and ``dedicated`` per role, and a new
+  read-only, environment-scoped MCP tool ``find_bundle_reuse`` (``environment_arg="environment"``)
+  returns the service's answer verbatim. ``preview_bundle_changeset`` takes ``overrides``; called
+  without them on an environment with overlaps it returns the ``decision_required`` errors, which
+  is the agent's cue to ask the human.
+
+**The GUI is split like the service** (``NERD0015_HMD_MS_DEPLOYMENT``): ``hmd-app-neuronsphere-core``
+holds the catalog and read views, and this repository is the premium overlay (``deployments_premium``)
+that adds views needing premium routes. The paths above (``deployments/views.py``,
+``deployments/services/api_client.py``) now live in core. Placement follows the route each view
+calls: the bundle catalog and detail views (SPEC001) and ``find_bundle_reuse`` are core;
+``bundle_deploy_preview`` (SPEC002), which calls the premium ``generate_bundle_changeset``, is
+overlay, hidden when the service serves only the core routes.
+
+Releases, which build on bundles, are specified in ``HMD_APP_NEURONSPHERE_NERD011``.
+
 A Bundle is only useful here if resolving one looks, to both a human and a reviewer, exactly like
 resolving any other ``ChangeSet`` — because it *is* one, generated rather than hand-assembled.
 The GUI additions below therefore add a discovery surface (list/detail views) and one new
