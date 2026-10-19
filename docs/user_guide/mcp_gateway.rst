@@ -52,12 +52,96 @@ To make a deployed MCP server available through the gateway:
    in its ``resource-outputs.yaml``, tagged ``mcp.neuronsphere.io/kind=mcp-server``. Its
    output needs at least ``server_name`` (the same name in every environment) and
    ``url``.
-2. If the server needs a credential from the gateway, add it to the GUI's
-   upstream-credentials secret (``config.mcpGatewayCredentialsSecret``) and name its key
-   in ``credential_ref``. To have the gateway forward the caller's own SSO token instead,
-   set ``auth_mode: passthrough``.
+2. Leave ``auth_mode`` at its default, ``service``. The gateway then calls the server
+   with a token from the platform's identity provider (see `Locking down an upstream`_),
+   and the server must accept nothing else. For a server outside the platform's IdP,
+   add a static credential to the GUI's upstream-credentials secret
+   (``config.mcpGatewayCredentialsSecret``) and name its key in ``credential_ref``. To
+   have the gateway forward the caller's own SSO token instead, set
+   ``auth_mode: passthrough``, but only for a server that enforces its own per-user
+   permissions.
 3. To require deploy rights rather than view rights, set ``required_role: deployer``.
 
 Turn the gateway on with ``config.mcpGatewayEnabled: "true"``. Servers that are not
 deployed through NeuronSphere can be added with ``config.mcpGatewayEndpoints``
 (``server@environment=url;auth=...;cred=...``). See NERD012 for the full design.
+
+Locking down an upstream
+------------------------
+
+The gateway checks each caller's environment permissions, so an upstream that callers
+could reach directly would bypass that check. Each ``service``-mode upstream must accept
+only tokens the identity provider issued to the gateway, for that upstream's
+environment. If the gateway has no way to get such a token, it refuses the call rather
+than calling anonymously.
+
+Every environment shares one IdP tenant, so every user's own token verifies against
+the same keys. **Checking the signature alone lets every user in.** The client and scope
+checks below are what keep users out.
+
+Set up the gateway's client
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Register a machine-to-machine client for the gateway alone, separate from the GUI's
+deployment service account, and give it one scope per environment: ``mcp:dev``,
+``mcp:test``, ``mcp:prod``, and so on.
+
+**Okta**
+
+1. Under *Security > API > Authorization Servers*, choose the custom authorization
+   server to issue the tokens. Client credentials with custom scopes need a custom
+   authorization server (Okta's API Access Management). A server of its own, with an
+   audience such as ``api://neuronsphere-mcp``, keeps these tokens apart from users'.
+2. On its *Scopes* tab, add ``mcp:<environment>`` for each environment.
+3. Under *Applications*, create an *API Services* app integration for the gateway, and
+   note its client ID and secret.
+4. On the authorization server's *Access Policies* tab, add a policy assigned to that
+   client, with a rule that allows the *Client Credentials* grant and the ``mcp:*``
+   scopes.
+5. If this authorization server is not the one the GUI signs users in with, set
+   ``config.mcpGatewayIdpIssuer`` to its issuer
+   (``https://<org>.okta.com/oauth2/<server-id>``).
+
+The tokens carry the client ID in ``cid`` and the scopes in ``scp``.
+
+**Auth0**
+
+1. Under *Applications > APIs*, create an API whose identifier is the audience, for
+   example ``api://neuronsphere-mcp``. On its *Permissions* tab, add
+   ``mcp:<environment>`` for each environment.
+2. Create a *Machine to Machine* application for the gateway, authorize it for that API,
+   and grant it the ``mcp:*`` permissions.
+3. Set ``config.mcpGatewayIdpAudience`` to the API identifier. Auth0 picks the API by
+   that parameter.
+
+The tokens carry the client ID in ``azp`` and the scopes in ``scope``. Auth0 counts
+machine-to-machine tokens against a monthly quota on some plans. The gateway caches one
+token per environment until shortly before it expires, so it requests only a handful an
+hour.
+
+**Then, for either provider**, store the client's credentials in the secret store as a
+secret with ``client_id`` and ``client_secret`` properties. Set
+``config.mcpGatewayIdpSecret`` to that secret's name. The GUI finds the token endpoint
+from the issuer's OIDC metadata. Set ``config.mcpGatewayIdpTokenUrl`` only to override it,
+and ``config.mcpGatewayIdpScope`` only if your scopes are not named
+``mcp:{environment}``.
+
+Verify the token at the upstream
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The upstream, or a verifying proxy in front of it, must check all of these on every
+request:
+
+- the signature, against the tenant's JWKS, and ``iss`` is the tenant's issuer
+- ``aud`` is the MCP audience
+- the client is the gateway's (Okta ``cid``, Auth0 ``azp``)
+- the scopes include ``mcp:<this environment>``, so a token issued for dev does not
+  open prod
+- ``exp`` has not passed
+
+The token names the gateway, not the caller. The caller is in the ``X-NS-User`` header,
+which the upstream can trust only because the token proves the request came through the
+gateway.
+
+Where the upstream shares a cluster with the GUI, also give it a ClusterIP service with
+no ingress, and a NetworkPolicy that admits only the GUI's pods.

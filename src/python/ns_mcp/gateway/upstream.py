@@ -9,13 +9,22 @@ exactly what left NERD008 SPEC014's federation unable to carry it.
 How the gateway authenticates is declared per server (the Resource's
 ``auth_mode``):
 
-* ``service`` (default) -- the gateway's own credential for that server, read from
-  ``MCP_GATEWAY_CREDENTIALS_DIR/<credential_ref>`` (a mounted Kubernetes secret),
-  plus the caller's identity in ``X-NS-*`` headers. The gateway is the
-  enforcement point; the upstream trusts it.
-* ``passthrough`` -- the caller's own Okta bearer, so the upstream applies its own
+* ``service`` (default) -- the gateway's own identity, plus the caller's in
+  ``X-NS-*`` headers. The gateway is the enforcement point, so the upstream must
+  accept only the gateway (SPEC007). The credential is, in order:
+
+  - a static bearer from ``MCP_GATEWAY_CREDENTIALS_DIR/<credential_ref>`` (a mounted
+    Kubernetes secret), for an upstream outside the platform's IdP; otherwise
+  - an access token the IdP issued to the gateway's client, scoped to the
+    endpoint's environment (``ns_mcp.gateway.idp``).
+
+  With neither, the call is refused: a service-mode upstream is never called
+  anonymously.
+* ``passthrough`` -- the caller's own SSO bearer, so the upstream applies its own
   authorization to the user. Platform API keys mean nothing outside this app, so
   API-key callers cannot use a passthrough server.
+* ``none`` -- identity headers only. Static configuration only (local fixtures);
+  a discovered Resource cannot select it.
 """
 import os
 from typing import Callable, Optional
@@ -53,14 +62,22 @@ def _credential(ref: str) -> str:
     return value
 
 
-def upstream_headers(endpoint: Endpoint, principal, request_id: str) -> dict:
-    """The headers to send upstream for ``principal`` calling ``endpoint``."""
+async def upstream_headers(
+    endpoint: Endpoint, principal, request_id: str, token_source=None
+) -> dict:
+    """The headers to send upstream for ``principal`` calling ``endpoint``.
+
+    ``token_source`` supplies IdP tokens for service mode; it defaults to the
+    process-wide one built from settings.
+    """
     headers = {
         "X-NS-User": principal.username,
         "X-NS-Environment": endpoint.environment,
         "X-Request-Id": request_id,
         GATEWAY_HOP_HEADER: "1",
     }
+    if endpoint.auth_mode == "none":
+        return headers
     if endpoint.auth_mode == "passthrough":
         if principal.is_api_key:
             raise GatewayCallError(
@@ -68,8 +85,22 @@ def upstream_headers(endpoint: Endpoint, principal, request_id: str) -> dict:
                 "SSO token; platform API keys cannot be forwarded to it."
             )
         headers["Authorization"] = f"Bearer {principal.raw_token}"
-    elif endpoint.credential_ref:
+        return headers
+    if endpoint.credential_ref:
         headers["Authorization"] = f"Bearer {_credential(endpoint.credential_ref)}"
+        return headers
+
+    if token_source is None:
+        from .idp import default_token_source
+
+        token_source = default_token_source()
+    if not token_source.configured:
+        raise GatewayCallError(
+            f"The gateway has no credential for '{endpoint.server_name}': configure "
+            "its identity provider client or give the server a credential_ref."
+        )
+    token = await token_source.token(endpoint.environment)
+    headers["Authorization"] = f"Bearer {token}"
     return headers
 
 

@@ -3,7 +3,14 @@ Documentation     MCP gateway acceptance tests (NERD012).
 ...
 ...               The local deploy enables the gateway and registers the chart's
 ...               credential-free echo sidecar as one server, "echo", deployed in two
-...               environments (config.mcpGatewayEndpoints: echo@dev and echo@test).
+...               environments (config.mcpGatewayEndpoints: echo@dev and echo@test,
+...               both auth=none since the fixture checks no token).
+...
+...               The same sidecar is also registered as "locked", a service-mode
+...               server with no credential_ref. The local deploy has no IdP client
+...               for the gateway, so "locked" must never be called: the gateway
+...               fails closed rather than calling a service-mode upstream
+...               anonymously (NERD012 SPEC007).
 ...               The echo tool reports the environment the gateway forwarded the
 ...               call as, so these tests prove a call reaches the deployment it
 ...               names -- not just that a tool answered.
@@ -21,6 +28,7 @@ Test Tags         mcp    mcp-gateway
 
 *** Variables ***
 ${ECHO_TOOL}      echo__echo
+${LOCKED_TOOL}    locked__echo
 ${REGISTRY_NAME}  io.neuronsphere/echo
 
 *** Keywords ***
@@ -82,3 +90,11 @@ Registry Listing Is In MCP Registry Shape
     Should Be Equal As Integers    ${status}    200
     Should Be Equal    ${entry}[server][remotes][0][type]    streamable-http
     Should End With    ${entry}[server][remotes][0][url]    /mcp/
+
+A Service Mode Server Without A Credential Is Never Called
+    [Documentation]    No credential_ref and no IdP client: the gateway will not
+    ...                call it anonymously, not even to list its tools, so it
+    ...                offers none. The same sidecar answers as "echo" (auth=none).
+    ${tools}=    List Mcp Tools
+    Should Contain    ${tools}    ${ECHO_TOOL}
+    Should Not Contain    ${tools}    ${LOCKED_TOOL}

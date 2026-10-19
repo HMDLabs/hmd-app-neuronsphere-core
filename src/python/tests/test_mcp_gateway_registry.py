@@ -105,6 +105,17 @@ class TestEndpointFromOutput(unittest.TestCase):
             endpoint_from_output({**base, "required_role": "owner"}, "dev", "r")
         )
 
+    def test_unauthenticated_none_mode_is_static_only(self):
+        # `none` is for local fixtures configured by an operator. A deployed
+        # producer must not be able to opt its server out of upstream auth.
+        self.assertIsNone(
+            endpoint_from_output(
+                {"server_name": "x", "url": "http://x", "auth_mode": "none"}, "dev", "r"
+            )
+        )
+        (endpoint,) = parse_static_endpoints("echo@dev=http://echo/mcp;auth=none")
+        self.assertEqual(endpoint.auth_mode, "none")
+
     def test_credential_ref_must_be_a_plain_name(self):
         # It names a file under MCP_GATEWAY_CREDENTIALS_DIR; a path would let a
         # producer point the gateway at any file it can read.

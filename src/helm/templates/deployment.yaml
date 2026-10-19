@@ -211,6 +211,20 @@ spec:
                   name: idp-providers
                   key: OAUTH_PROVIDERS
             {{- end }}
+            {{- /* The MCP gateway's own IdP client, for tokens it presents to
+                   service-mode upstreams (NERD012 SPEC007). */}}
+            {{- if .Values.config.mcpGatewayIdpSecret }}
+            - name: MCP_GATEWAY_IDP_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mcp-gateway-idp
+                  key: MCP_GATEWAY_IDP_CLIENT_ID
+            - name: MCP_GATEWAY_IDP_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mcp-gateway-idp
+                  key: MCP_GATEWAY_IDP_CLIENT_SECRET
+            {{- end }}
           {{- /* Service-mode credentials the MCP gateway presents to upstream MCP
                  servers: one key per credential_ref, mounted as one file each
                  (MCP_GATEWAY_CREDENTIALS_DIR). Optional -- servers without a

@@ -443,6 +443,18 @@ MCP_GATEWAY_TOOL_SEPARATOR = os.environ.get("MCP_GATEWAY_TOOL_SEPARATOR", "__")
 MCP_GATEWAY_CREDENTIALS_DIR = os.environ.get(
     "MCP_GATEWAY_CREDENTIALS_DIR", "/var/run/secrets/neuronsphere/mcp-upstreams"
 )
+# Service-mode upstreams without a credential_ref are called with a token the IdP
+# issues to the gateway's own client (client credentials), scoped to the upstream's
+# environment, so an upstream can accept the gateway and nobody else (NERD012
+# SPEC007). Use a dedicated client: the deployment service account's token must not
+# open MCP servers. The token endpoint comes from the issuer's OIDC metadata unless
+# MCP_GATEWAY_IDP_TOKEN_URL is set. AUDIENCE is sent only when set (Auth0 needs it).
+MCP_GATEWAY_IDP_ISSUER = os.environ.get("MCP_GATEWAY_IDP_ISSUER") or MCP_OKTA_ISSUER
+MCP_GATEWAY_IDP_TOKEN_URL = os.environ.get("MCP_GATEWAY_IDP_TOKEN_URL", "")
+MCP_GATEWAY_IDP_CLIENT_ID = os.environ.get("MCP_GATEWAY_IDP_CLIENT_ID", "")
+MCP_GATEWAY_IDP_CLIENT_SECRET = os.environ.get("MCP_GATEWAY_IDP_CLIENT_SECRET", "")
+MCP_GATEWAY_IDP_AUDIENCE = os.environ.get("MCP_GATEWAY_IDP_AUDIENCE", "")
+MCP_GATEWAY_IDP_SCOPE = os.environ.get("MCP_GATEWAY_IDP_SCOPE", "mcp:{environment}")
 
 # Response-size guards for the tool layer (a real BOM is large).
 MCP_DEFAULT_PAGE_SIZE = int(os.environ.get("MCP_DEFAULT_PAGE_SIZE", "100"))

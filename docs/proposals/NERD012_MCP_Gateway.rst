@@ -151,13 +151,17 @@ Two ideas were taken from the survey:
     means no session is shared between callers. The credential used depends on the
     server's ``auth_mode``:
 
-    - ``service`` -- the gateway presents its own bearer, read from
-      ``MCP_GATEWAY_CREDENTIALS_DIR/<credential_ref>``. That directory is a mounted
-      Kubernetes secret (``config.mcpGatewayCredentialsSecret``), one key per reference.
-      A reference with no credential behind it is an error, never an anonymous call. A
-      server with no ``credential_ref`` is called with identity headers only.
+    - ``service`` -- the gateway presents its own identity (SPEC007): a static bearer from
+      ``MCP_GATEWAY_CREDENTIALS_DIR/<credential_ref>`` when the server names one, otherwise
+      an access token the platform's IdP issued to the gateway's client. That directory is
+      a mounted Kubernetes secret (``config.mcpGatewayCredentialsSecret``), one key per
+      reference. A missing credential, or no credential source at all, is an error, never
+      an anonymous call.
     - ``passthrough`` -- the caller's own SSO bearer is forwarded, so the upstream applies
       its own authorization to the user.
+    - ``none`` -- identity headers only, for local fixtures. Only static configuration may
+      choose it. A discovered Resource cannot, so a producer cannot opt its own server
+      out of upstream authentication.
 
     Every forwarded request carries ``X-NS-User``, ``X-NS-Environment``, ``X-Request-Id``
     (the audit correlation id) and ``X-NS-Gateway-Hop``. A gateway that receives the hop
@@ -165,8 +169,8 @@ Two ideas were taken from the survey:
     other, or one points at its own ``/mcp``.
 
     Upstream URLs are never shown to callers. Reaching an upstream directly would bypass
-    the environment check, so the upstream should accept traffic only from the gateway, by
-    network policy or by its credential.
+    the environment check, so the upstream must accept traffic only from the gateway
+    (SPEC007).
 
 .. spec:: Discovery surfaces
     :id: HMD_APP_NEURONSPHERE_NERD012_SPEC005
@@ -196,10 +200,64 @@ Two ideas were taken from the survey:
     For local work and the acceptance suite, ``config.mcpGatewayEchoFixture`` runs
     ``python -m ns_mcp.gateway.echo`` as a sidecar. It is a credential-free upstream that
     reports back the environment it was routed as. The local config registers it as
-    ``echo@dev`` and ``echo@test``, and ``test/13_mcp_gateway.robot`` drives it.
+    ``echo@dev`` and ``echo@test`` with ``auth=none``, and ``test/13_mcp_gateway.robot``
+    drives it. It is also registered as ``locked@dev`` in ``service`` mode with no
+    credential. The local deploy has no IdP client for the gateway, so the suite checks
+    that ``locked`` is never called.
 
-    Out of scope here, and next:
+.. spec:: Upstream lockdown
+    :id: HMD_APP_NEURONSPHERE_NERD012_SPEC007
+    :links: HMD_APP_NEURONSPHERE_NERD012
+    :status: implemented
 
-    - an MCP server producer for Trino (``hmd-inf-trino``), then ClickHouse
-    - ``HMD_MS_BASE_NERD001``, so that ``hmd-ms-*`` services publish an mcp-server Resource
-      without any extra work
+    The gateway's environment check means nothing if a caller can reach an upstream
+    directly. A ``service``-mode upstream therefore accepts only requests carrying a token
+    the platform's IdP issued to the **gateway's own client**, for the upstream's **own
+    environment**.
+
+    *Tokens.* The gateway gets them with the OAuth client-credentials grant. It uses a
+    machine client registered for the gateway alone (``MCP_GATEWAY_IDP_CLIENT_ID`` and
+    ``_SECRET``, from the store secret named by ``config.mcpGatewayIdpSecret``), separate
+    from the deployment service account. It requests the scope ``mcp:<environment>``
+    (``MCP_GATEWAY_IDP_SCOPE``) and, when set, an ``audience``
+    (``MCP_GATEWAY_IDP_AUDIENCE``; Auth0 needs one, Okta does not). The token endpoint
+    comes from the issuer's OIDC metadata, and the issuer defaults to the SSO provider's.
+    No Okta- or Auth0-specific code is involved. Tokens are cached per environment and
+    replaced 60 seconds before they expire.
+
+    *Verification at the upstream.* Every environment shares one IdP tenant, so every
+    user's own token also verifies against the tenant's keys. A valid signature is
+    therefore not enough. The upstream, or a verifying proxy in front of it, must check
+    all of:
+
+    - ``iss`` is the tenant's issuer, and the signature verifies against its JWKS
+    - ``aud`` is the MCP audience
+    - the client is the gateway's (Okta ``cid``; Auth0 ``azp``)
+    - the scopes (Okta ``scp``; Auth0 ``scope``) include ``mcp:<this environment>``
+    - the token has not expired
+
+    The client check is what shuts out users. A dedicated audience such as
+    ``api://neuronsphere-mcp`` keeps the gateway's tokens and users' tokens from being
+    exchanged for each other. The environment scope keeps a token issued for dev from
+    opening prod.
+
+    *What the token does not carry.* It names the gateway, not the caller, and lives as
+    long as the IdP's access-token lifetime. The caller travels in ``X-NS-User``, which an
+    upstream can trust only because the token proves the request came from the gateway.
+
+    *Network policy is a second layer.* Where an upstream shares a cluster with the GUI,
+    it should be ClusterIP-only, with a NetworkPolicy that admits only the GUI's pods. That
+    cannot be the only control, because environments may sit in other clusters and
+    ``hmd-ms-*`` services run behind ``hmd_proxy``.
+
+    ``passthrough`` servers cannot be locked down this way: a dev-only user's own token is
+    as valid at prod as at dev. Use ``passthrough`` only for upstreams that enforce their
+    own per-user authorization.
+
+Out of scope here, and next:
+
+- a verifying proxy (sidecar) for third-party upstreams, packaged once and reused by
+  Trino and ClickHouse
+- an MCP server producer for Trino (``hmd-inf-trino``), then ClickHouse
+- ``HMD_MS_BASE_NERD001``, so that ``hmd-ms-*`` services publish an mcp-server Resource
+  and verify the gateway's token without any extra work

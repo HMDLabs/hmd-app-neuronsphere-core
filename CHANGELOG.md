@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-19
+
+- feat: MCP gateway upstream lockdown (NERD012 SPEC007): service-mode upstreams without a `credential_ref` are called with a client-credentials token the IdP issues to the gateway's own client, scoped `mcp:<environment>` (token endpoint from OIDC discovery, optional `audience` for Auth0, one cached token per environment). With no credential source the call is refused instead of sent anonymously. New static-only `auth=none` for local fixtures; chart `config.mcpGatewayIdp*` settings and an ExternalSecret for the gateway client
+- test: IdP token source, per-environment upstream tokens, fail-closed service mode, and a Robot check that an uncredentialed service-mode server is never called
+
 ## 2026-10-18
 
 - feat: MCP gateway (NERD012): `/mcp` also routes to every other MCP server NeuronSphere hosts, discovered from `mcp.neuronsphere.io/mcp-server` Resources in each environment (plus static `MCP_GATEWAY_ENDPOINTS`). A server deployed to several environments is one logical server; its tools are `<server>__<tool>` with an `environment` argument limited to the caller's grants, re-authorized and audited on every call, with service or passthrough upstream credentials declared per server

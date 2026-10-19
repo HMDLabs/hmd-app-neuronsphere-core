@@ -100,7 +100,12 @@ class GatewayTool(Tool):
                 self._environment_arg,
                 self._environments,
             )
-            headers = upstream_headers(endpoint, principal, request_id=correlation_id)
+            headers = await upstream_headers(
+                endpoint,
+                principal,
+                request_id=correlation_id,
+                token_source=provider.token_source,
+            )
             result = await call_upstream(
                 provider.client_factory,
                 endpoint,
@@ -176,10 +181,13 @@ class GatewayProvider(Provider):
         separator: str = "__",
         tools_ttl: float = 60,
         clock=time.monotonic,
+        token_source=None,
     ):
         super().__init__()
         self.registry = registry
         self.client_factory = client_factory
+        # IdP tokens for service-mode upstreams; None means the settings-built one.
+        self.token_source = token_source
         self.separator = separator
         self._tools_ttl = tools_ttl
         self._clock = clock
@@ -305,10 +313,22 @@ class GatewayProvider(Provider):
         if cached and now - cached[0] < self._tools_ttl:
             return cached[1]
         try:
-            headers = upstream_headers(
-                endpoint, principal, request_id=str(uuid.uuid4())
+            headers = await upstream_headers(
+                endpoint,
+                principal,
+                request_id=str(uuid.uuid4()),
+                token_source=self.token_source,
             )
             tools = await list_upstream_tools(self.client_factory, endpoint, headers)
+        except GatewayCallError as exc:
+            # A configuration problem (no credential), not a fault: no traceback.
+            logger.warning(
+                "MCP gateway will not call %s in %s: %s",
+                endpoint.server_name,
+                endpoint.environment,
+                exc,
+            )
+            return None
         except Exception:
             logger.warning(
                 "MCP gateway could not list tools for %s in %s (%s)",

@@ -28,6 +28,10 @@ MCP_RESOURCE_DEFINITION = "mcp-server"
 DISCOVERY_TAG = ("mcp.neuronsphere.io/kind", "mcp-server")
 
 AUTH_MODES = frozenset({"service", "passthrough"})
+#: Static configuration may also opt a server out of upstream auth, for local
+#: fixtures. A discovered Resource cannot: a producer must not be able to unlock
+#: its own server.
+STATIC_AUTH_MODES = AUTH_MODES | {"none"}
 ROLES = frozenset({"viewer", "deployer", "admin"})
 
 #: Server names become tool-name prefixes, so they are held to a safe alphabet.
@@ -60,7 +64,7 @@ class LogicalServer:
     endpoints: Dict[str, Endpoint] = field(default_factory=dict)
 
 
-def _valid_endpoint(**kwargs) -> Optional[Endpoint]:
+def _valid_endpoint(auth_modes=AUTH_MODES, **kwargs) -> Optional[Endpoint]:
     server_name = (kwargs.get("server_name") or "").strip()
     url = (kwargs.get("url") or "").strip()
     environment = (kwargs.get("environment") or "").strip()
@@ -75,7 +79,7 @@ def _valid_endpoint(**kwargs) -> Optional[Endpoint]:
         problem = "no url"
     elif not environment:
         problem = "no environment"
-    elif auth_mode not in AUTH_MODES:
+    elif auth_mode not in auth_modes:
         problem = f"unknown auth_mode {auth_mode!r}"
     elif required_role not in ROLES:
         problem = f"unknown required_role {required_role!r}"
@@ -126,7 +130,7 @@ _STATIC_OPTION_KEYS = {
 def parse_static_endpoints(raw: Optional[str]) -> List[Endpoint]:
     """Parse ``MCP_GATEWAY_ENDPOINTS``.
 
-    Comma-separated ``server@environment=url[;auth=service|passthrough][;cred=ref]
+    Comma-separated ``server@environment=url[;auth=service|passthrough|none][;cred=ref]
     [;role=viewer|deployer|admin]``. Malformed entries are logged and skipped: one
     typo must not take the gateway down.
     """
@@ -154,6 +158,7 @@ def parse_static_endpoints(raw: Optional[str]) -> List[Endpoint]:
             environment=environment,
             url=url,
             resource_name="static",
+            auth_modes=STATIC_AUTH_MODES,
             **fields,
         )
         if endpoint is not None:

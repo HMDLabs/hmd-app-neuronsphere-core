@@ -305,41 +305,112 @@ class TestToolsCall(GatewayTestCase):
         self.assertNotIn("relay__echo", self.tools("gw_dana"))
 
 
+class FakeTokenSource:
+    """Stands in for the IdP: one distinct token per environment."""
+
+    def __init__(self, configured=True):
+        self.configured = configured
+        self.requested = []
+
+    async def token(self, environment):
+        self.requested.append(environment)
+        return f"idp-token-{environment}"
+
+
+class TestIdpIssuedUpstreamTokens(GatewayTestCase):
+    """Service-mode servers with no credential_ref get an IdP token per environment."""
+
+    def setUp(self):
+        super().setUp()
+        self.token_source = FakeTokenSource()
+        servers = _servers()
+        self.provider = GatewayProvider(
+            registry=GatewayRegistry(loader=lambda: servers, ttl=60),
+            client_factory=self.provider.client_factory,
+            token_source=self.token_source,
+        )
+        gateway = FastMCP("gateway", auth=ApiKeyVerifier())
+        gateway.add_provider(self.provider)
+        self.app = gateway.http_app(path="/", stateless_http=True)
+
+    def test_each_environment_is_called_with_its_own_idp_token(self):
+        for env in ("dev", "prod"):
+            self.forwarded.clear()
+            self.call("gw_alice", "echo__echo", {"text": "hi", "environment": env})
+            server, routed, headers = self.forwarded[-1]
+            self.assertEqual(routed, env)
+            self.assertEqual(headers["Authorization"], f"Bearer idp-token-{env}")
+            self.assertEqual(headers["X-NS-Environment"], env)
+            self.assertEqual(headers["X-NS-User"], "gw_alice")
+
+    def test_listing_tools_also_presents_the_idp_token(self):
+        self.forwarded.clear()
+        self.tools("gw_dana")
+        self.assertTrue(self.forwarded)
+        for _server, env, headers in self.forwarded:
+            self.assertEqual(headers["Authorization"], f"Bearer idp-token-{env}")
+
+
 class TestUpstreamHeaders(unittest.TestCase):
     def _principal(self, mode):
         return Principal(
             user_id=1, username="alice", auth_mode=mode, raw_token="user-jwt"
         )
 
-    def test_passthrough_forwards_the_callers_own_token(self):
-        headers = upstream_headers(
-            _endpoint("relay", "dev", auth_mode="passthrough"),
-            self._principal(AUTH_MODE_OKTA),
-            request_id="r1",
+    def _headers(self, endpoint, mode=AUTH_MODE_OKTA, token_source=None):
+        return asyncio.run(
+            upstream_headers(
+                endpoint,
+                self._principal(mode),
+                request_id="r1",
+                token_source=token_source or FakeTokenSource(configured=False),
+            )
         )
+
+    def test_passthrough_forwards_the_callers_own_token(self):
+        headers = self._headers(_endpoint("relay", "dev", auth_mode="passthrough"))
         self.assertEqual(headers["Authorization"], "Bearer user-jwt")
         self.assertEqual(headers["X-NS-Environment"], "dev")
 
     def test_passthrough_rejects_an_api_key_principal(self):
         with self.assertRaises(GatewayCallError):
-            upstream_headers(
-                _endpoint("relay", "dev", auth_mode="passthrough"),
-                self._principal(AUTH_MODE_API_KEY),
-                request_id="r1",
+            self._headers(
+                _endpoint("relay", "dev", auth_mode="passthrough"), AUTH_MODE_API_KEY
             )
 
     @override_settings(MCP_GATEWAY_CREDENTIALS_DIR="/nonexistent-ns-mcp-creds")
     def test_a_missing_service_credential_is_an_error_not_an_anonymous_call(self):
         with self.assertRaises(GatewayCallError):
-            upstream_headers(
-                _endpoint("echo", "dev", credential_ref="echo-token"),
-                self._principal(AUTH_MODE_OKTA),
-                request_id="r1",
-            )
+            self._headers(_endpoint("echo", "dev", credential_ref="echo-token"))
 
-    def test_service_mode_without_a_credential_ref_sends_identity_only(self):
-        headers = upstream_headers(
-            _endpoint("echo", "dev"), self._principal(AUTH_MODE_OKTA), request_id="r1"
+    def test_service_mode_uses_an_idp_token_for_the_endpoints_environment(self):
+        source = FakeTokenSource()
+        headers = self._headers(_endpoint("echo", "prod"), token_source=source)
+        self.assertEqual(headers["Authorization"], "Bearer idp-token-prod")
+        self.assertEqual(source.requested, ["prod"])
+
+    def test_a_credential_ref_wins_over_the_idp(self):
+        directory = tempfile.mkdtemp()
+        with open(os.path.join(directory, "static"), "w") as fh:
+            fh.write("static-secret")
+        source = FakeTokenSource()
+        with override_settings(MCP_GATEWAY_CREDENTIALS_DIR=directory):
+            headers = self._headers(
+                _endpoint("echo", "dev", credential_ref="static"), token_source=source
+            )
+        self.assertEqual(headers["Authorization"], "Bearer static-secret")
+        self.assertEqual(source.requested, [])
+
+    def test_service_mode_with_no_credential_at_all_is_refused(self):
+        # Fail closed: never call a service-mode upstream anonymously.
+        with self.assertRaises(GatewayCallError):
+            self._headers(_endpoint("echo", "dev"))
+
+    def test_none_mode_sends_identity_headers_only(self):
+        source = FakeTokenSource()
+        headers = self._headers(
+            _endpoint("echo", "dev", auth_mode="none"), token_source=source
         )
         self.assertNotIn("Authorization", headers)
         self.assertEqual(headers["X-NS-User"], "alice")
+        self.assertEqual(source.requested, [])
