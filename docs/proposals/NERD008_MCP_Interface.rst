@@ -357,7 +357,13 @@ SPEC013.
 .. spec:: Federation
     :id: HMD_APP_NEURONSPHERE_NERD008_SPEC014
     :links: HMD_APP_NEURONSPHERE_NERD008
-    :status: proposed
+    :status: superseded
+
+    Superseded by ``HMD_APP_NEURONSPHERE_NERD012`` (MCP Registry and Environment-Aware
+    Gateway). That design resolves the identity problem below by building tools per request
+    instead of mounting proxies at startup, and it groups one server's deployments across
+    environments behind an ``environment`` argument. ``ns_mcp/federation.py`` has been
+    removed. The original text follows for the record.
 
     A service opting into MCP shall publish a Resource of definition
     ``mcp.neuronsphere.io/mcp-server`` carrying ``url`` and ``namespace``. Discovery then

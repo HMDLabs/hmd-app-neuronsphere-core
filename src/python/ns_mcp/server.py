@@ -5,7 +5,7 @@ from django.conf import settings
 from fastmcp import FastMCP
 
 from .auth import build_auth_provider
-from .federation import mount_federated
+from .gateway.install import install_gateway
 from .registry import (
     register_prompt_modules,
     register_resource_modules,
@@ -57,6 +57,15 @@ The same reads are also addressable as resources under neuronsphere://, and the
 prompts describe the call orders these tools are meant to be used in.
 """
 
+GATEWAY_INSTRUCTIONS = """
+This endpoint is also the gateway to the other MCP servers NeuronSphere hosts
+(query engines such as Trino or ClickHouse, internal services). list_mcp_servers
+shows which you can reach. Each server appears once, however many environments it
+runs in: its tools are named <server>__<tool> and take an `environment` argument
+whose allowed values are exactly the environments you may use. When you have only
+one, it may be omitted.
+"""
+
 #: The auth provider built alongside the server. Held so the ASGI entry point can
 #: pull its /.well-known routes out and serve them above the /mcp mount.
 _auth_provider = None
@@ -70,7 +79,7 @@ _server_stats = {
     "prompts": 0,
     "prompt_names": [],
     "modules": 0,
-    "federated": 0,
+    "gateway_enabled": False,
     "well_known_routes": [],
     "built": False,
 }
@@ -111,7 +120,7 @@ def _warn_on_downstream_mode() -> None:
 
 
 def build_mcp() -> FastMCP:
-    """Build the FastMCP server: auth, local capabilities, then federation."""
+    """Build the FastMCP server: auth, local capabilities, then the gateway."""
     global _auth_provider
 
     _auth_provider = build_auth_provider()
@@ -119,14 +128,15 @@ def build_mcp() -> FastMCP:
 
     mcp = FastMCP(
         name=settings.MCP_SERVER_NAME,
-        instructions=INSTRUCTIONS,
+        instructions=INSTRUCTIONS
+        + (GATEWAY_INSTRUCTIONS if settings.MCP_GATEWAY_ENABLED else ""),
         auth=_auth_provider,
     )
 
     registered = register_tool_modules(mcp, settings.MCP_TOOL_MODULES)
     resources = register_resource_modules(mcp, settings.MCP_RESOURCE_MODULES)
     prompts = register_prompt_modules(mcp, settings.MCP_PROMPT_MODULES)
-    federated = mount_federated(mcp)
+    gateway = install_gateway(mcp, _auth_provider)
 
     def _flatten(registry):
         return sorted(n for names in registry.values() for n in names)
@@ -143,7 +153,7 @@ def build_mcp() -> FastMCP:
             "prompts": len(prompt_names),
             "prompt_names": prompt_names,
             "modules": len(registered) + len(resources) + len(prompts),
-            "federated": federated,
+            "gateway_enabled": gateway is not None,
             "well_known_routes": [r.path for r in get_well_known_routes()],
             "built": True,
         }

@@ -40,7 +40,16 @@ def resolve_principal() -> Principal:
     unauthenticated requests with a 401 before a tool runs, so the missing-token
     branch here is defensive rather than the normal path.
     """
-    token = get_access_token()
+    return principal_from_access_token(get_access_token())
+
+
+def principal_from_access_token(token) -> Principal:
+    """``resolve_principal`` for a token verified outside an MCP request.
+
+    The gateway's catalog route is a plain HTTP endpoint beside ``/mcp``; it
+    verifies the bearer with the same auth provider and then needs the same
+    ``Principal`` a tool would get.
+    """
     if token is None:
         raise ToolError(
             "Unauthenticated. Send an Authorization: Bearer <token> header."

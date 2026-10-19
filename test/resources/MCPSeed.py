@@ -172,6 +172,29 @@ class MCPSeed:
         """The advertised tool names."""
         return [t["name"] for t in self.mcp_rpc("tools/list")["tools"]]
 
+    def get_mcp_tool_schema(self, name):
+        """One advertised tool's input schema."""
+        for tool in self.mcp_rpc("tools/list")["tools"]:
+            if tool["name"] == name:
+                return tool["inputSchema"]
+        raise RuntimeError(f"tool {name} is not advertised")
+
+    def get_mcp_registry(self, path="", authenticated=True):
+        """GET the gateway's registry listing. Returns ``(status, body)``."""
+        headers = {"Accept": "application/json"}
+        if authenticated:
+            headers["Authorization"] = f"Bearer {self._api_key or _resolve_api_key()}"
+        request = urllib.request.Request(
+            APP_URL.rstrip("/") + MCP_PATH + "registry/v0/servers" + path,
+            headers=headers,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return response.status, json.loads(response.read().decode())
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode()
+            return exc.code, json.loads(body) if body.strip() else None
+
     def list_mcp_resources(self):
         """The advertised static resource URIs."""
         return [r["uri"] for r in self.mcp_rpc("resources/list")["resources"]]

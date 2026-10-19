@@ -211,8 +211,45 @@ spec:
                   name: idp-providers
                   key: OAUTH_PROVIDERS
             {{- end }}
+          {{- /* Service-mode credentials the MCP gateway presents to upstream MCP
+                 servers: one key per credential_ref, mounted as one file each
+                 (MCP_GATEWAY_CREDENTIALS_DIR). Optional -- servers without a
+                 credential_ref need none. */}}
+          {{- if .Values.config.mcpGatewayCredentialsSecret }}
+          volumeMounts:
+            - name: mcp-upstream-credentials
+              mountPath: /var/run/secrets/neuronsphere/mcp-upstreams
+              readOnly: true
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{- /* Local only: a credential-free upstream the MCP gateway can route to,
+               so the acceptance suite can prove a call naming an environment
+               reaches that environment's deployment. Same image; no Django. */}}
+        {{- if .Values.config.mcpGatewayEchoFixture }}
+        - name: mcp-echo
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.env.HMD_REPO_VERSION }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "ns_mcp.gateway.echo"]
+          env:
+            - name: PORT
+              value: "8100"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        {{- end }}
+      {{- if .Values.config.mcpGatewayCredentialsSecret }}
+      volumes:
+        - name: mcp-upstream-credentials
+          secret:
+            secretName: {{ .Values.config.mcpGatewayCredentialsSecret | quote }}
+      {{- end }}
       {{- $compute := index .Values "dependencies" "compute" }}
       nodeSelector:
         kubernetes.io/os: linux

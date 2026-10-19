@@ -165,13 +165,58 @@ def read_tool(*, action, environment_arg: str = None, role: str = "viewer"):
     return decorator
 
 
+def load_user(principal):
+    """The Django user behind ``principal``. Runs in the worker thread."""
+    from django.contrib.auth.models import User
+
+    try:
+        return User.objects.get(pk=principal.user_id)
+    except User.DoesNotExist:
+        raise ToolError(
+            "The account behind this credential no longer exists."
+        ) from None
+
+
+def write_audit(
+    *,
+    user,
+    principal,
+    action,
+    environment,
+    details,
+    ip_address,
+    user_agent,
+    correlation_id,
+    started,
+    success,
+    error_message,
+    instance_name=None,
+):
+    """One ``AuditLog`` row for an MCP call. Runs in the worker thread.
+
+    Shared by ``@read_tool`` and the gateway so both transports record the same
+    shape; ``details`` carries whatever is specific to the call.
+    """
+    from deployments.services.audit import build_target, record_audit
+
+    record_audit(
+        user=user,
+        action=action,
+        target=build_target(environment=environment, instance_name=instance_name),
+        details={"auth_mode": principal.auth_mode, **details},
+        ip_address=ip_address,
+        user_agent=user_agent,
+        correlation_id=correlation_id,
+        success=success,
+        error_message=error_message,
+        duration_ms=int((time.time() - started) * 1000),
+    )
+
+
 def _invoke(
     fn, principal, kwargs, action, environment_arg, role, ip_address, user_agent
 ):
     """Authorize, run the tool, and audit. Runs in the worker thread."""
-    from django.contrib.auth.models import User
-
-    from deployments.services.audit import build_target, record_audit
     from deployments.services.authz import AccessDenied, assert_environment_access
 
     correlation_id = str(uuid.uuid4())
@@ -187,12 +232,7 @@ def _invoke(
     user = None
 
     try:
-        try:
-            user = User.objects.get(pk=principal.user_id)
-        except User.DoesNotExist:
-            raise ToolError(
-                "The account behind this credential no longer exists."
-            ) from None
+        user = load_user(principal)
 
         for arg in env_args:
             try:
@@ -212,24 +252,23 @@ def _invoke(
         # Surface a clean message rather than leaking internals to the caller.
         raise ToolError(f"{fn.__name__} failed: {exc}") from None
     finally:
-        record_audit(
+        write_audit(
             user=user,
+            principal=principal,
             action=action,
-            target=build_target(
-                environment=environment, instance_name=kwargs.get("instance_name")
-            ),
+            environment=environment,
+            instance_name=kwargs.get("instance_name"),
             details={
                 "transport": "mcp",
                 "tool": fn.__name__,
-                "auth_mode": principal.auth_mode,
                 "arguments": _redact(kwargs),
             },
             ip_address=ip_address,
             user_agent=user_agent,
             correlation_id=correlation_id,
+            started=started,
             success=success,
             error_message=error_message,
-            duration_ms=int((time.time() - started) * 1000),
         )
 
 

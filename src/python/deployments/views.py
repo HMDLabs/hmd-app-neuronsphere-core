@@ -1708,7 +1708,9 @@ def health_check(request):
             "resource_uris": stats["resource_uris"],
             "prompts": stats["prompts"],
             "prompt_names": stats["prompt_names"],
-            "federated_servers": stats["federated"],
+            # Whether the MCP gateway (NERD012) is serving upstream servers' tools.
+            # How many it can reach is per caller, so it is not reported here.
+            "gateway_enabled": stats["gateway_enabled"],
             # Empty unless Okta auth is configured. A client discovers where to get a
             # token from this document, so an empty list in cloud means discovery is
             # not being advertised even though the endpoint demands a bearer.

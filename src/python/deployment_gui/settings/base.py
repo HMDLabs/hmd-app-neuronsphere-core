@@ -411,6 +411,8 @@ MCP_TOOL_MODULES = _module_list(
         "ns_mcp.tools.instances",
         "ns_mcp.tools.repo_classes",
         "ns_mcp.tools.resources",
+        # Registers nothing unless MCP_GATEWAY_ENABLED.
+        "ns_mcp.tools.gateway",
     ],
 )
 MCP_RESOURCE_MODULES = _module_list(
@@ -418,11 +420,29 @@ MCP_RESOURCE_MODULES = _module_list(
 )
 MCP_PROMPT_MODULES = _module_list("MCP_PROMPT_MODULES", ["ns_mcp.capabilities.prompts"])
 
-# Federating tools from deployed services (see ns_mcp/federation.py). Off until
-# a service actually publishes an MCP endpoint and per-caller token forwarding
-# through a mounted proxy is settled.
-MCP_FEDERATION_ENABLED = _env_flag("MCP_FEDERATION_ENABLED", False)
-MCP_FEDERATED_ENDPOINTS = os.environ.get("MCP_FEDERATED_ENDPOINTS", "")
+# The MCP gateway (NERD012, ns_mcp/gateway/): every NeuronSphere-hosted MCP server
+# behind /mcp, one logical server per server_name with an `environment` argument
+# limited to the caller's grants. Off by default. MCP_FEDERATION_ENABLED /
+# MCP_FEDERATED_ENDPOINTS are the pre-gateway names and still honoured.
+MCP_GATEWAY_ENABLED = _env_flag(
+    "MCP_GATEWAY_ENABLED", _env_flag("MCP_FEDERATION_ENABLED", False)
+)
+MCP_FEDERATION_ENABLED = MCP_GATEWAY_ENABLED
+# Find servers from mcp.neuronsphere.io/mcp-server Resources in every environment.
+MCP_GATEWAY_DISCOVERY_ENABLED = _env_flag("MCP_GATEWAY_DISCOVERY_ENABLED", True)
+# Static endpoints: server@environment=url[;auth=service|passthrough][;cred=ref][;role=viewer|deployer|admin],...
+MCP_GATEWAY_ENDPOINTS = os.environ.get(
+    "MCP_GATEWAY_ENDPOINTS", os.environ.get("MCP_FEDERATED_ENDPOINTS", "")
+)
+MCP_FEDERATED_ENDPOINTS = MCP_GATEWAY_ENDPOINTS
+MCP_GATEWAY_REGISTRY_TTL = int(os.environ.get("MCP_GATEWAY_REGISTRY_TTL", "60"))
+MCP_GATEWAY_TOOLS_TTL = int(os.environ.get("MCP_GATEWAY_TOOLS_TTL", "60"))
+MCP_GATEWAY_CALL_TIMEOUT = int(os.environ.get("MCP_GATEWAY_CALL_TIMEOUT", "60"))
+MCP_GATEWAY_TOOL_SEPARATOR = os.environ.get("MCP_GATEWAY_TOOL_SEPARATOR", "__")
+# Service-mode upstream credentials: one file per credential_ref (a mounted secret).
+MCP_GATEWAY_CREDENTIALS_DIR = os.environ.get(
+    "MCP_GATEWAY_CREDENTIALS_DIR", "/var/run/secrets/neuronsphere/mcp-upstreams"
+)
 
 # Response-size guards for the tool layer (a real BOM is large).
 MCP_DEFAULT_PAGE_SIZE = int(os.environ.get("MCP_DEFAULT_PAGE_SIZE", "100"))

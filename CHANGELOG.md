@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-18
+
+- feat: MCP gateway (NERD012): `/mcp` also routes to every other MCP server NeuronSphere hosts, discovered from `mcp.neuronsphere.io/mcp-server` Resources in each environment (plus static `MCP_GATEWAY_ENDPOINTS`). A server deployed to several environments is one logical server; its tools are `<server>__<tool>` with an `environment` argument limited to the caller's grants, re-authorized and audited on every call, with service or passthrough upstream credentials declared per server
+- feat: MCP-Registry-format discovery at `/mcp/registry/v0/servers` and a `list_mcp_servers` tool, both filtered per caller
+- feat: `ns_mcp.gateway.echo` smoke-test upstream, run as a local-only chart sidecar (`config.mcpGatewayEchoFixture`)
+- refactor: `@read_tool`'s user loading and audit row are shared helpers (`load_user`, `write_audit`); the inert `ns_mcp/federation.py` is removed (superseded); `/health/` reports `gateway_enabled` instead of `federated_servers`
+- test: gateway registry, per-caller tools/list and tools/call, upstream identity, hop guard, catalog routes, and Robot suite `13_mcp_gateway.robot`
+
 ## 2026-09-20
 
 - feat: split out of hmd-app-neuronsphere as the core GUI (NERD0015): every view

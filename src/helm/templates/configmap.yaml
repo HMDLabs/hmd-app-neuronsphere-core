@@ -73,7 +73,15 @@ data:
          RemoteAuthProvider builds the RFC 9728 protected-resource document from it,
          which is how an MCP client discovers where to get a token. */}}
   MCP_BASE_URL: {{ if .Values.config.localHttp }}{{ printf "http://%s" .Values.alb.hostname | quote }}{{ else }}{{ printf "https://%s" .Values.alb.hostname | quote }}{{ end }}
-  MCP_FEDERATION_ENABLED: {{ .Values.config.mcpFederationEnabled | default "false" | quote }}
+  {{- /* MCP gateway (NERD012): route callers to the other MCP servers NeuronSphere
+         hosts, found from mcp.neuronsphere.io/mcp-server Resources in every
+         environment, one logical server each with an `environment` argument limited
+         to the caller's grants. mcpFederationEnabled is the pre-gateway name. */}}
+  MCP_GATEWAY_ENABLED: {{ .Values.config.mcpGatewayEnabled | default .Values.config.mcpFederationEnabled | default "false" | quote }}
+  MCP_GATEWAY_DISCOVERY_ENABLED: {{ .Values.config.mcpGatewayDiscoveryEnabled | default "true" | quote }}
+  {{- if .Values.config.mcpGatewayEndpoints }}
+  MCP_GATEWAY_ENDPOINTS: {{ .Values.config.mcpGatewayEndpoints | quote }}
+  {{- end }}
   {{- /* Platform API keys are a local/test credential path; cloud deployments
          authenticate with Okta bearer tokens instead. localHttp marks the same
          non-Okta local deploy that re-enables username/password login. */}}

@@ -37,3 +37,4 @@ It also covers browsing the catalog of **repo classes** and their published
    applying_a_change_set
    monitoring_a_deployment
    repo_classes
+   mcp_gateway

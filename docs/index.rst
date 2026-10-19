@@ -21,6 +21,7 @@ documented with the premium overlay, ``hmd-app-neuronsphere``.
    proposals/NERD008_MCP_Interface
    proposals/NERD009_Bundle_GUI_And_MCP
    proposals/NERD010_Modeling_App_Integration
+   proposals/NERD012_MCP_Gateway
    proposals/UIUX_Requirements
 
 
