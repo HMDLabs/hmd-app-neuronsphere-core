@@ -32,6 +32,10 @@ def sidebar_context(request):
         active_section = "repo_classes"
     elif path.startswith("/resources"):
         active_section = "resources"
+    elif path.startswith("/bundles"):
+        active_section = "bundles"
+    elif path.startswith("/releases"):
+        active_section = "releases"
     else:
         active_section = ""
         # Sections an extra app contributes (settings.EXTENSION_SECTIONS).

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Bundles - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Bundles</h1>
+        <p class="text-gray-600 mt-1">Versioned groupings of repo classes that deploy together</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex flex-wrap gap-3">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search name / summary..."
+                   class="flex-1 min-w-[12rem] border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+            <button type="submit" class="px-4 py-2 bg-ns-navy text-ns-lavender rounded-md hover:bg-ns-medium transition-colors">Filter</button>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <p>Unable to load bundles: {{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        {% if bundles %}
+        <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bundle</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Versions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Summary</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for b in bundles %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'deployments:bundle_detail' b.bundle_name %}"
+                           class="font-medium text-ns-electric hover:underline font-mono">{{ b.bundle_name }}</a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ b.latest_version|default:"-" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ b.versions|length }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ b.summary|default:"-"|truncatechars:100 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if bundles.has_other_pages %}
+        <div class="px-6 py-4 border-t flex justify-between items-center">
+            <span class="text-sm text-gray-700">Page {{ bundles.number }} of {{ bundles.paginator.num_pages }}</span>
+            <div class="flex space-x-2">
+                {% if bundles.has_previous %}<a href="?page={{ bundles.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>{% endif %}
+                {% if bundles.has_next %}<a href="?page={{ bundles.next_page_number }}{% if search %}&search={{ search }}{% endif %}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="px-6 py-12 text-center text-gray-500">
+            <p class="mt-2">No bundles found.</p>
+            {% if search %}<p class="text-sm mt-1">Try a different search term.</p>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

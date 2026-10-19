@@ -17,7 +17,7 @@ operator through the day-to-day workflow, end to end:
    log of any individual step.
 
 It also covers browsing the catalog of **repo classes** and their published
-**versions**.
+**versions**, and the **bundles** and **releases** catalogs.
 
 .. note::
 
@@ -37,3 +37,4 @@ It also covers browsing the catalog of **repo classes** and their published
    applying_a_change_set
    monitoring_a_deployment
    repo_classes
+   bundles_and_releases

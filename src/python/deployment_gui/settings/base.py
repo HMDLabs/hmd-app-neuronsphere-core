@@ -313,6 +313,15 @@ DEPLOYMENT_API_CACHE_TTL = int(os.environ.get("DEPLOYMENT_API_CACHE_TTL", "30"))
 # cross-worker staleness (LocMemCache is per-process).
 DEPLOYMENT_BOM_CACHE_TTL = int(os.environ.get("DEPLOYMENT_BOM_CACHE_TTL", "3600"))
 
+# Local demos only: show deterministic stand-in test runs and an attestation on
+# release versions whose evidence records none, marked "Demo data" wherever
+# shown (services/release_evidence.py). Never set in a cloud deployment.
+RELEASE_DEMO_EVIDENCE = os.environ.get("RELEASE_DEMO_EVIDENCE", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 # ============== MCP (Model Context Protocol) server ==============
 # A read-only MCP server is mounted at MCP_MOUNT_PATH by deployment_gui/asgi.py,
 # alongside the Django app. Shape follows HMD_MS_BASE_NERD001.

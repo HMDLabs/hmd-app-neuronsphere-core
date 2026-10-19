@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-14
+
+- feat: release versions show their tests and attestation (NERD011 SPEC002) from `evidence.tests` / `evidence.attestation`; with `RELEASE_DEMO_EVIDENCE` (local demos only) versions recording none show deterministic stand-ins marked "Demo data"
+- feat: `bundle_actions` slot on a bundle version and `release_panels` slot on a release version for the premium overlay
+
+## 2026-10-09
+
+- feat: Bundles and Releases catalog (NERD009, NERD011): `/bundles/` with a bundle's versions and role table, `/releases/` with a release version's evidence badge (verified / attested / partly attested, naming carried-forward pins), pins, notes, included releases and an HTMX-polled arrival status; `release_actions` and `releases_header_actions` slots for the premium overlay
+- feat: the API client shows the service's `{"detail": ...}` sentence instead of the raw JSON body on errors
+
 ## 2026-09-20
 
 - feat: split out of hmd-app-neuronsphere as the core GUI (NERD0015): every view

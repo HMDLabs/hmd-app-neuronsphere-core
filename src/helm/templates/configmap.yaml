@@ -45,6 +45,11 @@ data:
   {{- else }}
   DB_NAME: {{ index .Values "details" $dbCredentialsInstance "db_name" | quote }}
   {{- end }}
+  {{- /* Local demos only (NERD011): stand-in test runs and an attestation on release
+         versions that record none, marked "Demo data". Never set it in the cloud. */}}
+  {{- if .Values.config.releaseDemoEvidence }}
+  RELEASE_DEMO_EVIDENCE: "true"
+  {{- end }}
   TELEMETRY_SERVICE_URLS: {{ .Values.config.telemetryServiceUrls | quote }}
   TELEMETRY_SERVICE_TIMEOUT: {{ .Values.config.telemetryServiceTimeout | quote }}
   {{- if .Values.config.oktaAuth }}

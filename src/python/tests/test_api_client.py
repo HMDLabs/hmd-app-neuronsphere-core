@@ -534,3 +534,110 @@ class TestSearchDiscovery(_Base, _CaptureMixin):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBundleCatalog(_Base, _CaptureMixin):
+    def test_list_bundles_is_cached(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client)
+        client.list_bundles()
+        self.assertEqual(captured["method"], "GET")
+        self.assertEqual(captured["endpoint"], "/apiop/list_bundles")
+        self.assertEqual(captured["cache_key"], "bundles:all")
+
+    def test_list_bundle_versions_path_and_cache_key(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client)
+        client.list_bundle_versions("telemetry")
+        self.assertEqual(captured["endpoint"], "/apiop/list_bundle_versions/telemetry")
+        self.assertEqual(captured["cache_key"], "bundle_versions:telemetry")
+
+    def test_get_bundle_version_passes_version_as_param(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client, data={})
+        client.get_bundle_version("telemetry", version="0.1.0")
+        self.assertEqual(captured["endpoint"], "/apiop/get_bundle_version/telemetry")
+        self.assertEqual(captured["params"], {"version": "0.1.0"})
+        self.assertEqual(captured["cache_key"], "bundle_version:telemetry:0.1.0")
+
+    def test_get_bundle_version_without_version_means_newest_and_is_not_cached(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client, data={})
+        client.get_bundle_version("telemetry")
+        self.assertIsNone(captured["params"])
+        self.assertIsNone(captured["cache_key"])
+
+
+class TestReleaseCatalog(_Base, _CaptureMixin):
+    """Release status and install state change under the viewer, so nothing is cached."""
+
+    def test_list_releases(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client)
+        client.list_releases()
+        self.assertEqual(captured["endpoint"], "/apiop/list_releases")
+        self.assertIsNone(captured["cache_key"])
+
+    def test_list_release_versions(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client)
+        client.list_release_versions("telemetry")
+        self.assertEqual(captured["endpoint"], "/apiop/list_release_versions/telemetry")
+        self.assertIsNone(captured["cache_key"])
+
+    def test_get_release_version(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client, data={})
+        client.get_release_version("telemetry", version="0.2.0")
+        self.assertEqual(captured["endpoint"], "/apiop/get_release_version/telemetry")
+        self.assertEqual(captured["params"], {"version": "0.2.0"})
+        self.assertIsNone(captured["cache_key"])
+
+    def test_release_install_status_refresh(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client, data={})
+        client.release_install_status("telemetry", "0.2.0", refresh=True)
+        self.assertEqual(
+            captured["endpoint"], "/apiop/release_install_status/telemetry"
+        )
+        self.assertEqual(captured["params"], {"version": "0.2.0", "refresh": "true"})
+        self.assertIsNone(captured["cache_key"])
+
+    def test_release_install_status_defaults_to_the_stored_report(self):
+        client = DeploymentAPIClient()
+        captured = self._capture(client, data={})
+        client.release_install_status("telemetry", "0.2.0")
+        self.assertEqual(captured["params"], {"version": "0.2.0"})
+
+
+class TestErrorDetail(_Base):
+    """The service answers 4xx with ``{"detail": "..."}``; users should see the sentence."""
+
+    def _respond(self, status, text):
+        from unittest import mock
+
+        response = mock.Mock(status_code=status, text=text)
+        http = mock.MagicMock()
+        http.__enter__.return_value.request.return_value = response
+        with mock.patch(
+            "deployments.services.api_client.httpx.Client", return_value=http
+        ):
+            return DeploymentAPIClient()._make_request("GET", "/apiop/x")
+
+    def test_extracts_detail(self):
+        result = self._respond(404, '{"detail": "Release, nope, not found."}')
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, "Release, nope, not found.")
+        self.assertEqual(result.status_code, 404)
+
+    def test_keeps_raw_text_when_not_json(self):
+        self.assertEqual(self._respond(502, "Bad Gateway").error, "Bad Gateway")
+
+    def test_keeps_raw_text_when_json_has_no_detail(self):
+        self.assertEqual(
+            self._respond(500, '{"message": "boom"}').error, '{"message": "boom"}'
+        )
+
+    def test_keeps_raw_text_when_detail_is_not_a_string(self):
+        body = '{"detail": [{"loc": ["body"], "msg": "bad"}]}'
+        self.assertEqual(self._respond(422, body).error, body)

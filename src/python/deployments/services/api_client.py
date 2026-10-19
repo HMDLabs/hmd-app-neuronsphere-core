@@ -23,6 +23,16 @@ def _encode_collection(value: Any) -> str:
 logger = logging.getLogger(__name__)
 
 
+def _error_text(body: str) -> str:
+    """The service answers 4xx with ``{"detail": "<sentence>"}``; show the
+    sentence. Any other body is returned as received."""
+    try:
+        detail = json.loads(body).get("detail")
+    except (ValueError, AttributeError):
+        return body
+    return detail if isinstance(detail, str) else body
+
+
 @dataclass
 class APIResponse:
     """Wrapper for API responses."""
@@ -108,7 +118,7 @@ class DeploymentAPIClient:
                     return APIResponse(
                         success=False,
                         data=None,
-                        error=response.text,
+                        error=_error_text(response.text),
                         status_code=response.status_code,
                     )
 
@@ -575,6 +585,70 @@ class DeploymentAPIClient:
             "GET",
             f"/apiop/get_resource_definition/{rd_id}",
             cache_key=f"resource_def:{rd_id}",
+        )
+
+    #
+    # NERD009/NERD011 bundles and releases. Bundle declarations are immutable per
+    # version, so they are cached like definition metadata. Release status and
+    # install state change under the viewer (a cut is promoted, artifacts arrive
+    # by replication), so nothing about a release is cached.
+
+    def list_bundles(self) -> APIResponse:
+        """GET /apiop/list_bundles"""
+        return self._make_request("GET", "/apiop/list_bundles", cache_key="bundles:all")
+
+    def list_bundle_versions(self, bundle_name: str) -> APIResponse:
+        """GET /apiop/list_bundle_versions/<name>"""
+        return self._make_request(
+            "GET",
+            f"/apiop/list_bundle_versions/{bundle_name}",
+            cache_key=f"bundle_versions:{bundle_name}",
+        )
+
+    def get_bundle_version(
+        self, bundle_name: str, version: Optional[str] = None
+    ) -> APIResponse:
+        """GET /apiop/get_bundle_version/<name>[?version=]
+
+        Only an exact version is cached; "newest" can move.
+        """
+        return self._make_request(
+            "GET",
+            f"/apiop/get_bundle_version/{bundle_name}",
+            params={"version": version} if version else None,
+            cache_key=f"bundle_version:{bundle_name}:{version}" if version else None,
+        )
+
+    def list_releases(self) -> APIResponse:
+        """GET /apiop/list_releases"""
+        return self._make_request("GET", "/apiop/list_releases")
+
+    def list_release_versions(self, release_name: str) -> APIResponse:
+        """GET /apiop/list_release_versions/<name>"""
+        return self._make_request("GET", f"/apiop/list_release_versions/{release_name}")
+
+    def get_release_version(
+        self, release_name: str, version: Optional[str] = None
+    ) -> APIResponse:
+        """GET /apiop/get_release_version/<name>[?version=] (newest if omitted)."""
+        return self._make_request(
+            "GET",
+            f"/apiop/get_release_version/{release_name}",
+            params={"version": version} if version else None,
+        )
+
+    def release_install_status(
+        self, release_name: str, version: str, refresh: bool = False
+    ) -> APIResponse:
+        """GET /apiop/release_install_status/<name>?version=[&refresh=true]
+
+        The stored arrival report; ``refresh`` recomputes it (never writing).
+        """
+        params = {"version": version}
+        if refresh:
+            params["refresh"] = "true"
+        return self._make_request(
+            "GET", f"/apiop/release_install_status/{release_name}", params=params
         )
 
     def get_resource_definition_ancestry(self, rd_id: str) -> APIResponse:
