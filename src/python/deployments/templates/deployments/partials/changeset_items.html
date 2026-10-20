@@ -2,10 +2,12 @@
 {% if draft.content %}
 <ul class="divide-y divide-gray-200">
     {% for item in draft.content %}
-    {# `v`/`vq` back the instance editor's version picker: `v` seeds from the
+    {% comment %}
+       `v`/`vq` back the instance editor's version picker: `v` seeds from the
        item's current version so an untouched picker saves it unchanged, and the
        version rows swapped in from repo_class_versions_results.html bind to it
-       within this item's own Alpine scope. #}
+       within this item's own Alpine scope.
+    {% endcomment %}
     <li class="px-6 py-4 hover:bg-gray-50"
         x-data="{ openPanel: null, depsLoaded: false, instanceLoaded: false,
                   v: '{{ item.repo_class_version|escapejs }}', vq: '' }">

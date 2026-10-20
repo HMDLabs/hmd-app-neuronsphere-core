@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 2026-10-20
 
+- fix: the change set instance card no longer shows the version picker's template note as page text: a `{# #}` comment spanning lines is not a comment in Django, so it is a `{% comment %}` block, and `tests/test_template_comments.py` fails on any multi-line `{#`
 - fix: the wheel ships the `deployments` app's templates and static files (`src/python/MANIFEST.in`). Without them a pip-installed core had no `base.html`, so the premium overlay's page tests raised `TemplateDoesNotExist`; the image, which copies the source tree, was unaffected
 
 ## 2026-10-19
