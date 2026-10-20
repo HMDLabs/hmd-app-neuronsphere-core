@@ -1,0 +1,6 @@
+# Ship the deployments app's templates and static files in the wheel, as the
+# image's source copy has them. include_package_data alone adds nothing
+# without this file, so a pip-installed core (the overlay's test environment)
+# had no base.html and every page extending it raised TemplateDoesNotExist.
+recursive-include deployments/templates *
+recursive-include deployments/static *

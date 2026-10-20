@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-20
+
+- fix: the wheel ships the `deployments` app's templates and static files (`src/python/MANIFEST.in`). Without them a pip-installed core had no `base.html`, so the premium overlay's page tests raised `TemplateDoesNotExist`; the image, which copies the source tree, was unaffected
+
 ## 2026-10-19
 
 - feat: MCP gateway upstream lockdown (NERD012 SPEC007): service-mode upstreams without a `credential_ref` are called with a client-credentials token the IdP issues to the gateway's own client, scoped `mcp:<environment>` (token endpoint from OIDC discovery, optional `audience` for Auth0, one cached token per environment). With no credential source the call is refused instead of sent anonymously. New static-only `auth=none` for local fixtures; chart `config.mcpGatewayIdp*` settings and an ExternalSecret for the gateway client
