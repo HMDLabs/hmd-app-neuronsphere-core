@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-21
+
+- fix: saving a ChangeSet item's instance or dependency edit now refreshes the Review/Apply header out-of-band, as add and remove do, so it cannot go stale
+- fix: `{% extension_slot %}` returns its output stripped, so a slot that renders only whitespace is empty in `{% if %}` and the "Apply unavailable" note shows instead of nothing
+- test: whitespace-only slot is falsy; Robot case that the Review link stays after saving an instance edit
+
 ## 2026-10-20
 
 - fix: the change set instance card no longer shows the version picker's template note as page text: a `{# #}` comment spanning lines is not a comment in Django, so it is a `{% comment %}` block, and `tests/test_template_comments.py` fails on any multi-line `{#`

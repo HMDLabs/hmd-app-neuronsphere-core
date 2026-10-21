@@ -114,6 +114,26 @@ Edit Dependencies Panel Loads Picker
     # The HTMX-loaded picker partial replaces the loading placeholder
     Wait For Elements State    text=Loading dependency options    hidden    timeout=10s
 
+Header Actions Remain After Saving An Instance Edit
+    [Documentation]    Saving an item edit refreshes the header and keeps the Review link
+    [Tags]    changeset
+    Navigate To ChangeSet Creation
+    ${timestamp}=    Evaluate    __import__('time').time()
+    Fill ChangeSet Form    edit-hdr-${timestamp}
+    Click Button With Text    Create ChangeSet
+    Wait For Elements State    input[name="instance_name"]    visible    timeout=10s
+    Fill Text    input[name="instance_name"]    hdr-instance
+    Fill Text    input[name="repo_class"]    hmd-ms-test
+    Fill Text    input[name="version"]    0.1.0
+    Click Button With Text    Add to ChangeSet
+    Wait For HTMX Request
+    Wait For Elements State    main >> span:has-text("hdr-instance")    visible    timeout=10s
+    Click    button:has-text("Edit instance")
+    Wait For Elements State    button:has-text("Save instance")    visible    timeout=10s
+    Click    button:has-text("Save instance")
+    Wait For HTMX Request
+    Wait For Elements State    a:has-text("Review")    visible    timeout=10s
+
 ChangeSet Draft Shows Change Count
     [Documentation]    Verify draft shows count of changes
     Navigate To ChangeSet Creation

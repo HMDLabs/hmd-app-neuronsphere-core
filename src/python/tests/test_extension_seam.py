@@ -56,6 +56,30 @@ class TestSlotsWithNoExtraApps(unittest.TestCase):
             self.assertIs(api_client_class(), DeploymentAPIClient)
 
 
+class TestWhitespaceOnlySlot(unittest.TestCase):
+    """An app's slot that renders only whitespace must read as empty.
+
+    Pages gate fallbacks on ``{% extension_slot "x" as v %}{% if v %}``, and a
+    bare newline is truthy there.
+    """
+
+    def test_a_whitespace_only_slot_is_falsy_in_an_if(self):
+        from unittest.mock import MagicMock, patch
+
+        tpl = MagicMock()
+        tpl.render.return_value = "\n  \n"
+        with patch(
+            "deployments.templatetags.extension_slots.slot_templates",
+            return_value=[("fake_ext", tpl)],
+        ), patch(
+            "deployments.templatetags.extension_slots.slot_context", return_value={}
+        ):
+            out = _render(
+                '{% extension_slot "x" as v %}{% if v %}shown{% else %}fallback{% endif %}'
+            )
+        self.assertEqual(out, "fallback")
+
+
 class TestSlotsWithAnExtraApp(unittest.TestCase):
     """A throwaway extra app on disk: one slot template and a slots.context hook."""
 

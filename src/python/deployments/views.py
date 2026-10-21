@@ -1130,9 +1130,11 @@ def changeset_set_item_deps(request, draft_id: int, index: int):
     item["dependencies"] = parsed
     draft.save()
 
+    # Items plus the out-of-band header refresh, as add/remove do, so the
+    # Review/Apply block never goes stale after an edit.
     return render(
         request,
-        "deployments/partials/changeset_items.html",
+        "deployments/partials/changeset_items_response.html",
         {"draft": draft},
     )
 
@@ -1199,9 +1201,11 @@ def changeset_set_item_instance(request, draft_id: int, index: int):
     item["instance_configuration"] = configuration
     draft.save()
 
+    # Items plus the out-of-band header refresh, as add/remove do, so the
+    # Review/Apply block never goes stale after an edit.
     return render(
         request,
-        "deployments/partials/changeset_items.html",
+        "deployments/partials/changeset_items_response.html",
         {"draft": draft},
     )
 

@@ -50,4 +50,5 @@ def extension_slot(context, name):
         ctx = context.flatten()
         ctx.update(slot_context(app, request))
         rendered.append(tpl.render(ctx))
-    return mark_safe("".join(rendered))
+    # stripped so a slot that renders only whitespace is falsy in {% if %}
+    return mark_safe("".join(rendered).strip())
