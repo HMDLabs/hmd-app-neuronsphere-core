@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-22
+
+- fix: cache the service-account token for its real `expires_in` (less the 5-minute buffer, capped at an hour) instead of a fixed 55 minutes. An IdP with shorter-lived tokens left an expired token in the cache, so every call through the service account, including the MCP gateway's server discovery, was refused as Unauthorized until the entry ran out
+
 ## 2026-10-21
 
 - fix: saving a ChangeSet item's instance or dependency edit now refreshes the Review/Apply header out-of-band, as add and remove do, so it cannot go stale

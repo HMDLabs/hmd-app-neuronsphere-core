@@ -21,6 +21,7 @@ class AuthTokenManager:
         self.okta_issuer = os.environ.get("OAUTH_PROVIDER_URL")
         self.client_id = os.environ.get("SERVICE_CLIENT_ID")
         self.client_secret = os.environ.get("SERVICE_CLIENT_SECRET")
+        self._last_expires_in: Optional[int] = None
 
     def get_token(self) -> Optional[str]:
         """Get valid auth token, refreshing if needed.
@@ -36,10 +37,21 @@ class AuthTokenManager:
         # Obtain new token
         token = self._fetch_new_token()
         if token:
-            # Cache token with appropriate TTL (1 hour minus buffer)
-            cache.set(self.CACHE_KEY, token, timeout=3600 - self.TOKEN_BUFFER_SECONDS)
+            cache.set(self.CACHE_KEY, token, timeout=self._cache_timeout())
 
         return token
+
+    def _cache_timeout(self) -> int:
+        """Seconds to cache the token just fetched: its lifetime less the buffer.
+
+        Capped at an hour. A token that lives less than the buffer is held for
+        half its life rather than at all past it, so an expired token is never
+        served from the cache.
+        """
+        lifetime = self._last_expires_in or 3600
+        if lifetime > self.TOKEN_BUFFER_SECONDS:
+            return min(lifetime, 3600) - self.TOKEN_BUFFER_SECONDS
+        return max(1, lifetime // 2)
 
     def _fetch_new_token(self) -> Optional[str]:
         """Fetch new token from Okta.
@@ -64,7 +76,12 @@ class AuthTokenManager:
             )
 
             if response.status_code == 200:
-                token = response.json().get("access_token")
+                payload = response.json()
+                token = payload.get("access_token")
+                try:
+                    self._last_expires_in = int(payload.get("expires_in") or 0) or None
+                except (TypeError, ValueError):
+                    self._last_expires_in = None
                 logger.info("Successfully obtained new API token")
                 return token
             else:
