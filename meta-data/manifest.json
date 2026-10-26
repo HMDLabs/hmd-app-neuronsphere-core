@@ -115,11 +115,6 @@
         "repo_class_name": "hmd-inf-redis",
         "required": "false",
         "version_spec": "~= 0.1"
-      },
-      "okta-service-app": {
-        "repo_class_name": "hmd-inf-okta-app",
-        "required": "false",
-        "version_spec": "~= 0.2"
       }
     },
     "default_configuration": {

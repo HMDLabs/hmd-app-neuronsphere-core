@@ -70,17 +70,18 @@ Discovery needs the deployment service account
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The gateway finds ``mcp-server`` Resources by querying the deployment service as the
-GUI's own service account, not as the caller. That account comes from a service-type
-``hmd-inf-okta-app`` instance wired to the optional ``okta-service-app`` dependency
-role, with ``config.oktaAuth`` on. The chart then syncs ``SERVICE_CLIENT_ID``,
-``SERVICE_CLIENT_SECRET`` and ``SERVICE_TOKEN_ISSUER`` into the pod. The issuer is the
-Okta ``services_issuer``, because the deployment service checks any token that is not
-from a trusted human client against that issuer and the
-``api://neuronsphere-services`` audience.
+GUI's own service account, not as the caller. With ``config.oktaAuth`` on, the GUI's
+CDKTF stack creates that account as an Okta service app for the instance, and the
+chart syncs ``SERVICE_CLIENT_ID``, ``SERVICE_CLIENT_SECRET`` and
+``SERVICE_TOKEN_ISSUER`` into the pod from its secret,
+``okta-<instance>-<repo>-<deployment id>``. The issuer is the Okta
+``services_issuer``, because the deployment service checks any token that is not from
+a trusted human client against that issuer and the ``api://neuronsphere-services``
+audience.
 
-Without the role, the pod has no service-account token. The gateway then skips
-discovery, logs ``MCP server discovery skipped: no service-account token``, and serves
-only ``config.mcpGatewayEndpoints``. ``list_mcp_servers`` stays empty even though the
+If the pod has no service-account token, for example before the stack has created the
+app, the gateway skips discovery, logs ``MCP server discovery skipped: no
+service-account token``, and serves only ``config.mcpGatewayEndpoints``. ``list_mcp_servers`` stays empty even though the
 Resources exist. A per-environment ``MCP server discovery failed ... Unauthorized``
 warning instead means a token was sent but refused. Check that its client belongs to
 ``services_issuer``.

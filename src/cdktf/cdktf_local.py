@@ -48,7 +48,14 @@ class CdkTfStack(HmdCdkTfStack):
         # legacy inline okta_app_oauth / group_assignment resources still in
         # state from before the okta-app dep refactor. Safe to remove once
         # those orphans are gone.
-        Okta(self)
+        okta = Okta(self)
+
+        # The service account the GUI calls hmd-ms-deployment as when it has no
+        # user token to forward (MCP gateway discovery, MCP API-key callers). Its
+        # secret, okta-<instance>-<repo>-<did>, is synced into the pod by
+        # okta-service-app-external-secret.yaml. Okta is not emulated locally.
+        if not self.is_local and (config.get("config") or {}).get("oktaAuth"):
+            okta.oauth_service_app(create_secret=True)
 
         django_secret_name = get_django_secret_name(
             instance_name, repo_name, deployment_id
