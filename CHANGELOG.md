@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-26
+
+- fix: give the GUI a deployment service account. The chart never set `SERVICE_CLIENT_ID`/`SERVICE_CLIENT_SECRET`, so the service token was always `None` and every service-account call, including MCP gateway discovery, went out unauthenticated and was refused as Unauthorized in every environment. The new optional `okta-service-app` role (a service-type `hmd-inf-okta-app`) is synced by `okta-service-app-external-secret.yaml`, and `AuthTokenManager` fetches from `SERVICE_TOKEN_ISSUER` (Okta `services_issuer`), falling back to `OAUTH_PROVIDER_URL`
+- fix: missing service-account credentials are logged once at WARNING, not DEBUG, and MCP gateway discovery is skipped with a warning naming the cause instead of sending anonymous selector queries
+
 ## 2026-10-22
 
 - fix: cache the service-account token for its real `expires_in` (less the 5-minute buffer, capped at an hour) instead of a fixed 55 minutes. An IdP with shorter-lived tokens left an expired token in the cache, so every call through the service account, including the MCP gateway's server discovery, was refused as Unauthorized until the entry ran out

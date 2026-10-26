@@ -226,3 +226,44 @@ def test_the_downstream_token_mode_defaults_to_passthrough():
     assert 'MCP_DOWNSTREAM_TOKEN_MODE: "service"' in _render(
         {"config": {"mcpDownstreamTokenMode": "service"}}
     )
+
+
+_SERVICE_APP_ROLE = {
+    "dependencies": {
+        "okta-service-app": {
+            "instance_name": "gui-service",
+            "repo_name": "hmd-inf-okta-app",
+            "deployment_id": "aaa",
+        }
+    }
+}
+
+
+def test_the_okta_service_app_role_wires_the_service_account():
+    """The service account the GUI calls hmd-ms-deployment as (gateway discovery,
+    API-key callers) comes from a service-type ``hmd-inf-okta-app`` instance, and its
+    tokens from ``services_issuer`` -- the issuer the deployment service checks a
+    non-human token against."""
+    out = _render(_deep_merge({"config": {"oktaAuth": True}}, _SERVICE_APP_ROLE))
+    assert "okta-service-application" in out
+    # hmd-inf-okta-app's service-type secret name has no suffix, unlike "-web".
+    assert "okta-gui-service-hmd-inf-okta-app-aaa" in out
+    assert "property: services_issuer" in out
+    for var in ("SERVICE_CLIENT_ID", "SERVICE_CLIENT_SECRET", "SERVICE_TOKEN_ISSUER"):
+        assert f"name: {var}" in out
+
+
+def test_without_the_service_app_role_nothing_references_it():
+    """The role is optional: a BOM that has not added it yet still renders."""
+    out = _render({"config": {"oktaAuth": True}})
+    assert "okta-service-application" not in out
+    assert "SERVICE_CLIENT_ID" not in out
+
+
+def test_okta_off_ignores_the_service_app_role():
+    out = _render(
+        _deep_merge({"config": {"oktaAuth": False}}, _SERVICE_APP_ROLE),
+        drop_roles=("okta-app",),
+    )
+    assert "okta-service-application" not in out
+    assert "SERVICE_CLIENT_ID" not in out

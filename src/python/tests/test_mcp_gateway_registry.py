@@ -5,6 +5,7 @@ environment a server is deployed in -- into logical servers keyed by
 ``server_name``. Grouping, parsing, and caching are pure enough to test without
 an MCP transport; the provider that serves them is covered separately.
 """
+
 import unittest
 
 from deployments.services.api_client import APIResponse
@@ -218,3 +219,37 @@ class TestGatewayRegistryCaching(unittest.TestCase):
         results.append(RuntimeError("deployment service down"))
         now[0] += 11
         self.assertEqual(registry.snapshot(), {"echo": "first"})
+
+
+class TestDefaultRegistryWithoutServiceToken(unittest.TestCase):
+    """Discovery runs as the service account; without a token it must not run.
+
+    An anonymous selector query is refused by the deployment service's authorizer
+    in every environment, which read as "no MCP servers" with only a per-environment
+    Unauthorized to go on. Skip discovery with one warning naming the cause, and
+    keep serving the static endpoints.
+    """
+
+    def test_no_service_token_skips_discovery_but_keeps_static_endpoints(self):
+        from unittest import mock
+
+        from django.test import override_settings
+
+        from ns_mcp.gateway.registry import default_registry
+
+        client = mock.Mock(auth_token=None)
+        with (
+            override_settings(
+                MCP_GATEWAY_DISCOVERY_ENABLED=True,
+                MCP_GATEWAY_ENDPOINTS="echo@dev=http://echo/mcp",
+                MCP_GATEWAY_REGISTRY_TTL=60,
+            ),
+            mock.patch("deployments.services.auth.get_api_client", return_value=client),
+            self.assertLogs("ns_mcp.gateway.registry", level="WARNING") as logs,
+        ):
+            servers = default_registry().snapshot()
+
+        client.find_resources_by_selector.assert_not_called()
+        client.list_environments.assert_not_called()
+        self.assertEqual(set(servers), {"echo"})
+        self.assertTrue(any("SERVICE_CLIENT_ID" in line for line in logs.output))

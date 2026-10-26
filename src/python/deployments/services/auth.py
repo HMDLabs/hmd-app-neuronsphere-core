@@ -18,10 +18,15 @@ class AuthTokenManager:
 
     def __init__(self):
         """Initialize the token manager."""
-        self.okta_issuer = os.environ.get("OAUTH_PROVIDER_URL")
+        # Service tokens are checked downstream against the services issuer, not
+        # the one users log in against; OAUTH_PROVIDER_URL is only the fallback.
+        self.okta_issuer = os.environ.get("SERVICE_TOKEN_ISSUER") or os.environ.get(
+            "OAUTH_PROVIDER_URL"
+        )
         self.client_id = os.environ.get("SERVICE_CLIENT_ID")
         self.client_secret = os.environ.get("SERVICE_CLIENT_SECRET")
         self._last_expires_in: Optional[int] = None
+        self._warned_unconfigured = False
 
     def get_token(self) -> Optional[str]:
         """Get valid auth token, refreshing if needed.
@@ -60,7 +65,16 @@ class AuthTokenManager:
             Access token string or None
         """
         if not all([self.okta_issuer, self.client_id, self.client_secret]):
-            logger.debug("OAuth credentials not configured, skipping token fetch")
+            # Every service-account call then goes out without a token and is
+            # refused as Unauthorized, so this must not hide at DEBUG.
+            if not self._warned_unconfigured:
+                logger.warning(
+                    "No service-account token: SERVICE_CLIENT_ID, "
+                    "SERVICE_CLIENT_SECRET and SERVICE_TOKEN_ISSUER (or "
+                    "OAUTH_PROVIDER_URL) must all be set. Calls to the deployment "
+                    "service as the service account will be unauthenticated."
+                )
+                self._warned_unconfigured = True
             return None
 
         try:

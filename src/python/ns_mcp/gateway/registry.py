@@ -12,6 +12,7 @@ selects on a tag every producer sets (``DISCOVERY_TAG``) and asks once per
 environment. ``MCP_GATEWAY_ENDPOINTS`` is the static escape hatch for servers that
 are not deployed through NeuronSphere, and for local work and tests.
 """
+
 import logging
 import re
 import threading
@@ -262,7 +263,18 @@ def default_registry() -> GatewayRegistry:
     def load():
         from deployments.services.auth import get_api_client
 
-        client = get_api_client() if settings.MCP_GATEWAY_DISCOVERY_ENABLED else None
+        client = None
+        if settings.MCP_GATEWAY_DISCOVERY_ENABLED:
+            client = get_api_client()
+            if not client.auth_token:
+                # An anonymous selector query is refused in every environment,
+                # which would read as "no servers". Name the cause instead.
+                logger.warning(
+                    "MCP server discovery skipped: no service-account token "
+                    "(SERVICE_CLIENT_ID/SERVICE_CLIENT_SECRET). Serving static "
+                    "MCP_GATEWAY_ENDPOINTS only."
+                )
+                client = None
         return discover(client, settings.MCP_GATEWAY_ENDPOINTS)
 
     return GatewayRegistry(loader=load, ttl=settings.MCP_GATEWAY_REGISTRY_TTL)

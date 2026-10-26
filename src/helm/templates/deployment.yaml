@@ -201,6 +201,27 @@ spec:
                   name: okta-global
                   key: OAUTH_PROVIDER_URL
             {{- end }}
+            {{- /* The service account, synced by okta-service-app-external-secret.yaml
+                   under the same guard. Without it, calls that have no user token to
+                   forward -- MCP gateway discovery, API-key callers -- go out
+                   unauthenticated. */}}
+            {{- if and .Values.config.oktaAuth (hasKey (.Values.dependencies | default dict) "okta-service-app") }}
+            - name: SERVICE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: okta-service-application
+                  key: SERVICE_CLIENT_ID
+            - name: SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: okta-service-application
+                  key: SERVICE_CLIENT_SECRET
+            - name: SERVICE_TOKEN_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: okta-service-application
+                  key: SERVICE_TOKEN_ISSUER
+            {{- end }}
             {{- /* Multi-provider SSO, synced by idp-providers-external-secret.yaml.
                    Takes precedence over the single-provider OAUTH_* vars above, so a
                    customer on Auth0 or their own OIDC provider needs no Okta at all. */}}
