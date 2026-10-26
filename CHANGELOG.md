@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 2026-10-26
 
+- fix: MCP gateway discovery decodes each Resource's `output`. `find_resources_by_selector` returns `Resource.serialize()`, whose output is base64-encoded JSON, so discovery's `.get` on that string raised and aborted the whole refresh, listing no servers. It now reuses `decode_resource_output` and skips an undecodable output with a warning instead of failing
 - refactor: the CDKTF stack creates the GUI's Okta service app itself (`oauth_service_app(create_secret=True)`, cloud with `oktaAuth` only), and the chart syncs its `okta-<instance>-<repo>-<did>` secret whenever `oktaAuth` is on. This replaces the optional `okta-service-app` dependency role, so a cloud GUI can no longer be deployed without a service account
 - fix: give the GUI a deployment service account. The chart never set `SERVICE_CLIENT_ID`/`SERVICE_CLIENT_SECRET`, so the service token was always `None` and every service-account call, including MCP gateway discovery, went out unauthenticated and was refused as Unauthorized in every environment. The new optional `okta-service-app` role (a service-type `hmd-inf-okta-app`) is synced by `okta-service-app-external-secret.yaml`, and `AuthTokenManager` fetches from `SERVICE_TOKEN_ISSUER` (Okta `services_issuer`), falling back to `OAUTH_PROVIDER_URL`
 - fix: missing service-account credentials are logged once at WARNING, not DEBUG, and MCP gateway discovery is skipped with a warning naming the cause instead of sending anonymous selector queries

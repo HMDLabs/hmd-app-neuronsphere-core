@@ -253,3 +253,35 @@ class TestDefaultRegistryWithoutServiceToken(unittest.TestCase):
         client.list_environments.assert_not_called()
         self.assertEqual(set(servers), {"echo"})
         self.assertTrue(any("SERVICE_CLIENT_ID" in line for line in logs.output))
+
+
+class TestSerializedResourceOutputs(unittest.TestCase):
+    """``find_resources_by_selector`` returns ``Resource.serialize()``: the
+    ``output`` mapping arrives as base64-encoded JSON, not a dict. Discovery
+    called ``.get`` on that string, and the AttributeError aborted the whole
+    refresh, so no server was listed at all."""
+
+    def test_a_base64_encoded_output_is_decoded(self):
+        import json
+        from base64 import b64encode
+
+        encoded = b64encode(
+            json.dumps({"server_name": "deployment", "url": "https://d/mcp"}).encode()
+        ).decode()
+        client = FakeClient(
+            {"admin": [{"resource_name": "deployment-mcp", "output": encoded}]}
+        )
+        servers = discover(client, static="")
+        self.assertEqual(servers["deployment"].endpoints["admin"].url, "https://d/mcp")
+
+    def test_an_undecodable_output_is_skipped_not_fatal(self):
+        client = FakeClient(
+            {
+                "admin": [
+                    {"resource_name": "broken", "output": "not-base64!!"},
+                    _resource("trino", "http://trino/mcp"),
+                ]
+            }
+        )
+        servers = discover(client, static="")
+        self.assertEqual(set(servers), {"trino"})

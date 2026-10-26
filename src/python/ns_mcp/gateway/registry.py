@@ -20,6 +20,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
+from deployments.services.resource_query import decode_resource_output
+
 logger = logging.getLogger(__name__)
 
 MCP_RESOURCE_NAMESPACE = "mcp.neuronsphere.io"
@@ -188,11 +190,16 @@ def _discovered_endpoints(client) -> list:
             )
             continue
         for resource in response.data or []:
-            endpoint = endpoint_from_output(
-                resource.get("output"), environment, resource.get("resource_name", "")
-            )
+            name = resource.get("resource_name", "")
+            # The selector endpoint returns Resource.serialize(), whose output
+            # mapping is base64-encoded JSON rather than a dict.
+            output = decode_resource_output(resource.get("output")) or {}
+            if not isinstance(output, dict):
+                logger.warning("Ignoring MCP endpoint (undecodable output): %s", name)
+                continue
+            endpoint = endpoint_from_output(output, environment, name)
             if endpoint is not None:
-                endpoints.append((endpoint, resource.get("output") or {}))
+                endpoints.append((endpoint, output))
     return endpoints
 
 
