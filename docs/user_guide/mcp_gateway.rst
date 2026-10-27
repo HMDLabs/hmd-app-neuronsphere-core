@@ -42,6 +42,10 @@ Finding servers
   each, and your environments for each.
 - Registry-aware clients can browse ``GET /mcp/registry/v0/servers`` (same bearer). It
   answers in the official MCP Registry ``server.json`` format.
+- A server listed with none of its ``<server>__*`` tools has ``tools_unavailable`` on
+  each deployment the gateway cannot use, saying why: for example a service-mode
+  server with no gateway credential (no ``credential_ref`` and no
+  ``config.mcpGatewayIdpSecret``), or an upstream whose ``tools/list`` failed.
 
 Publishing a server (platform engineers)
 ----------------------------------------

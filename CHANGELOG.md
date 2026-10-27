@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-27
+
+- feat: `list_mcp_servers` reports `tools_unavailable` on each deployment whose tools the gateway cannot offer: a credential it lacks (checked without calling the upstream, shared with `upstream_headers`) or the last failed upstream `tools/list` (exception type only). A server listed with no tools was previously explained only by a pod-log warning
+
 ## 2026-10-26
 
 - fix: MCP gateway discovery decodes each Resource's `output`. `find_resources_by_selector` returns `Resource.serialize()`, whose output is base64-encoded JSON, so discovery's `.get` on that string raised and aborted the whole refresh, listing no servers. It now reuses `decode_resource_output` and skips an undecodable output with a warning instead of failing

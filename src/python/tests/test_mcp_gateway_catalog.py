@@ -5,6 +5,7 @@
 points back at this gateway and lists only the environments the caller may use.
 ``list_mcp_servers`` is the same answer from inside an MCP session.
 """
+
 import asyncio
 from unittest import mock
 
@@ -16,7 +17,13 @@ from httpx import ASGITransport
 from ns_mcp.auth import ApiKeyVerifier
 from ns_mcp.gateway.catalog import REGISTRY_NAMESPACE, add_catalog_routes
 from ns_mcp.tooling import ToolContext
-from tests.test_mcp_gateway_provider import GatewayTestCase
+from ns_mcp.gateway.provider import GatewayProvider
+from ns_mcp.gateway.registry import GatewayRegistry
+from tests.test_mcp_gateway_provider import (
+    FakeTokenSource,
+    GatewayTestCase,
+    _servers,
+)
 
 
 class CatalogTestCase(GatewayTestCase):
@@ -127,3 +134,58 @@ class TestListMcpServersTool(CatalogTestCase):
         with mock.patch("ns_mcp.tools.gateway.get_gateway", return_value=None):
             result = list_mcp_servers.__wrapped__(ToolContext(self.dana, None, None))
         self.assertEqual(result, {"enabled": False, "servers": []})
+
+
+class TestToolsUnavailable(CatalogTestCase):
+    """A server listed with no tools says why, instead of the reason being only in
+    the pod log."""
+
+    def servers_for(self, provider, username="gw_dana"):
+        from ns_mcp.principal import AUTH_MODE_API_KEY, Principal
+        from ns_mcp.tools.gateway import list_mcp_servers
+
+        user = {"gw_dana": self.dana, "gw_root": self.root}[username]
+        principal = Principal(
+            user_id=user.pk,
+            username=username,
+            auth_mode=AUTH_MODE_API_KEY,
+            raw_token="",
+        )
+        with mock.patch("ns_mcp.tools.gateway.get_gateway", return_value=provider):
+            result = list_mcp_servers.__wrapped__(ToolContext(user, principal, None))
+        return {s["server_name"]: s for s in result["servers"]}
+
+    def test_a_deployment_the_gateway_can_call_reports_nothing(self):
+        self.tools("gw_dana")
+        deployment = self.servers_for(self.provider)["echo"]["deployments"][0]
+        self.assertNotIn("tools_unavailable", deployment)
+
+    def test_a_service_mode_server_without_a_gateway_credential_says_so(self):
+        servers = _servers()  # no credential_ref
+        provider = GatewayProvider(
+            registry=GatewayRegistry(loader=lambda: servers, ttl=60),
+            client_factory=self.provider.client_factory,
+            token_source=FakeTokenSource(configured=False),
+        )
+        deployment = self.servers_for(provider)["echo"]["deployments"][0]
+        self.assertIn("no credential for 'echo'", deployment["tools_unavailable"])
+
+    def test_an_upstream_that_fails_to_list_reports_the_failure(self):
+        def failing_factory(endpoint, headers):
+            raise ConnectionError("upstream detail that must not leak")
+
+        servers = _servers(credential_ref="echo-token")
+        self.provider = GatewayProvider(
+            registry=GatewayRegistry(loader=lambda: servers, ttl=60),
+            client_factory=failing_factory,
+        )
+        gateway = FastMCP("gateway", auth=ApiKeyVerifier())
+        gateway.add_provider(self.provider)
+        self.app = gateway.http_app(path="/", stateless_http=True)
+
+        self.assertEqual(self.tools("gw_dana"), {})
+        problem = self.servers_for(self.provider)["echo"]["deployments"][0][
+            "tools_unavailable"
+        ]
+        self.assertIn("ConnectionError", problem)
+        self.assertNotIn("must not leak", problem)

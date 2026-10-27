@@ -13,6 +13,7 @@ goes under ``_meta["io.neuronsphere/gateway"]``, the registry's extension point.
 These are plain routes beside the MCP endpoint, so FastMCP's auth middleware does
 not cover them; each request verifies its bearer with the same auth provider.
 """
+
 import logging
 
 from django.conf import settings
@@ -46,8 +47,25 @@ def _latest_version(endpoints) -> str:
     return max(versions, key=_version_key) if versions else "0.0.0"
 
 
+def _deployment(provider, endpoint, principal) -> dict:
+    deployment = {
+        "name": endpoint.environment,
+        "version": endpoint.version,
+        "required_role": endpoint.required_role,
+        "auth_mode": endpoint.auth_mode,
+    }
+    problem = provider.tools_problem(endpoint, principal)
+    if problem:
+        deployment["tools_unavailable"] = problem
+    return deployment
+
+
 def summaries(provider, principal, user) -> list:
-    """What the caller can reach, one dict per logical server. Worker thread."""
+    """What the caller can reach, one dict per logical server. Worker thread.
+
+    A deployment whose tools the gateway cannot offer says why in
+    ``tools_unavailable``, so a server listed with no tools is explained.
+    """
     return [
         {
             "server_name": server.name,
@@ -55,15 +73,7 @@ def summaries(provider, principal, user) -> list:
             "description": server.description,
             "tool_prefix": f"{server.name}{provider.separator}",
             "environments": [e.environment for e in endpoints],
-            "deployments": [
-                {
-                    "name": e.environment,
-                    "version": e.version,
-                    "required_role": e.required_role,
-                    "auth_mode": e.auth_mode,
-                }
-                for e in endpoints
-            ],
+            "deployments": [_deployment(provider, e, principal) for e in endpoints],
             "version": _latest_version(endpoints),
         }
         for server, endpoints in provider.reachable(principal, user)

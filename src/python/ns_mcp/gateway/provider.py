@@ -17,6 +17,7 @@ re-authorizes the environment it is handed with the same
 call either way -- a client that ignores the ``enum`` and sends ``prod`` anyway
 is refused before anything leaves the gateway.
 """
+
 import asyncio
 import copy
 import logging
@@ -40,6 +41,7 @@ from .upstream import (
     GATEWAY_HOP_HEADER,
     GatewayCallError,
     call_upstream,
+    credential_problem,
     default_client_factory,
     list_upstream_tools,
     upstream_headers,
@@ -192,6 +194,8 @@ class GatewayProvider(Provider):
         self._tools_ttl = tools_ttl
         self._clock = clock
         self._tools_cache: Dict[tuple, tuple] = {}
+        # Why the last tools/list of an endpoint failed, for list_mcp_servers.
+        self._listing_errors: Dict[tuple, str] = {}
 
     # -- Provider interface ------------------------------------------------
 
@@ -230,6 +234,19 @@ class GatewayProvider(Provider):
             if endpoints:
                 reachable.append((server, endpoints))
         return reachable
+
+    def tools_problem(self, endpoint: Endpoint, principal) -> Optional[str]:
+        """Why ``endpoint`` offers ``principal`` no tools, or None. Worker thread.
+
+        A credential the gateway lacks is found without calling anything, so every
+        worker answers alike; a failure only an upstream call shows is reported
+        once this worker's last ``tools/list`` of the endpoint has hit it.
+        """
+        problem = credential_problem(endpoint, principal, self.token_source)
+        if problem:
+            return problem
+        key = (endpoint.server_name, endpoint.environment, endpoint.url)
+        return self._listing_errors.get(key)
 
     def authorize(self, user, server_name, environment, environment_arg, offered):
         """The endpoint to call, or a ``ToolError``. Worker thread.
@@ -322,6 +339,7 @@ class GatewayProvider(Provider):
             tools = await list_upstream_tools(self.client_factory, endpoint, headers)
         except GatewayCallError as exc:
             # A configuration problem (no credential), not a fault: no traceback.
+            self._listing_errors[key] = str(exc)
             logger.warning(
                 "MCP gateway will not call %s in %s: %s",
                 endpoint.server_name,
@@ -329,7 +347,11 @@ class GatewayProvider(Provider):
                 exc,
             )
             return None
-        except Exception:
+        except Exception as exc:
+            # The exception type only: its text may carry upstream detail.
+            self._listing_errors[key] = (
+                f"The gateway could not list its tools ({type(exc).__name__})."
+            )
             logger.warning(
                 "MCP gateway could not list tools for %s in %s (%s)",
                 endpoint.server_name,
@@ -338,6 +360,7 @@ class GatewayProvider(Provider):
                 exc_info=True,
             )
             return None
+        self._listing_errors.pop(key, None)
         self._tools_cache[key] = (now, tools)
         return tools
 

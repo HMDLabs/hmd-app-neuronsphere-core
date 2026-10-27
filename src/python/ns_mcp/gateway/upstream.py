@@ -26,6 +26,7 @@ How the gateway authenticates is declared per server (the Resource's
 * ``none`` -- identity headers only. Static configuration only (local fixtures);
   a discovered Resource cannot select it.
 """
+
 import os
 from typing import Callable, Optional
 
@@ -62,6 +63,43 @@ def _credential(ref: str) -> str:
     return value
 
 
+def _service_token_source(token_source):
+    if token_source is None:
+        from .idp import default_token_source
+
+        token_source = default_token_source()
+    return token_source
+
+
+def credential_problem(endpoint: Endpoint, principal, token_source=None):
+    """Why the gateway cannot authenticate to ``endpoint`` for ``principal``, or None.
+
+    The configuration checks ``upstream_headers`` refuses on, made without calling
+    anything, so ``list_mcp_servers`` can say why a server offers no tools.
+    """
+    if endpoint.auth_mode == "none":
+        return None
+    if endpoint.auth_mode == "passthrough":
+        if principal.is_api_key:
+            return (
+                f"'{endpoint.server_name}' authorizes callers itself and needs your "
+                "SSO token; platform API keys cannot be forwarded to it."
+            )
+        return None
+    if endpoint.credential_ref:
+        try:
+            _credential(endpoint.credential_ref)
+        except GatewayCallError as exc:
+            return str(exc)
+        return None
+    if not _service_token_source(token_source).configured:
+        return (
+            f"The gateway has no credential for '{endpoint.server_name}': configure "
+            "its identity provider client or give the server a credential_ref."
+        )
+    return None
+
+
 async def upstream_headers(
     endpoint: Endpoint, principal, request_id: str, token_source=None
 ) -> dict:
@@ -70,6 +108,9 @@ async def upstream_headers(
     ``token_source`` supplies IdP tokens for service mode; it defaults to the
     process-wide one built from settings.
     """
+    problem = credential_problem(endpoint, principal, token_source)
+    if problem:
+        raise GatewayCallError(problem)
     headers = {
         "X-NS-User": principal.username,
         "X-NS-Environment": endpoint.environment,
@@ -79,27 +120,13 @@ async def upstream_headers(
     if endpoint.auth_mode == "none":
         return headers
     if endpoint.auth_mode == "passthrough":
-        if principal.is_api_key:
-            raise GatewayCallError(
-                f"'{endpoint.server_name}' authorizes callers itself and needs your "
-                "SSO token; platform API keys cannot be forwarded to it."
-            )
         headers["Authorization"] = f"Bearer {principal.raw_token}"
         return headers
     if endpoint.credential_ref:
         headers["Authorization"] = f"Bearer {_credential(endpoint.credential_ref)}"
         return headers
 
-    if token_source is None:
-        from .idp import default_token_source
-
-        token_source = default_token_source()
-    if not token_source.configured:
-        raise GatewayCallError(
-            f"The gateway has no credential for '{endpoint.server_name}': configure "
-            "its identity provider client or give the server a credential_ref."
-        )
-    token = await token_source.token(endpoint.environment)
+    token = await _service_token_source(token_source).token(endpoint.environment)
     headers["Authorization"] = f"Bearer {token}"
     return headers
 
