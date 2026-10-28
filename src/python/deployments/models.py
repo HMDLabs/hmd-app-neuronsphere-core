@@ -153,6 +153,8 @@ _CHANGESET_ITEM_ALLOWED_KEYS = (
     "dependencies",
     "config_spec",
     "image_only",
+    # The item's own tool set image (hmd-lang-deployment 0.1.104+).
+    "deploy_image",
 )
 
 

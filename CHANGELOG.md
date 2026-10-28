@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-10-28
+
+- fix: ChangeSet drafts keep an item's own `deploy_image` (the hmd-img-projectbuilder image it deploys with, hmd-lang-deployment 0.1.104+). `sanitize_changeset_item` dropped it, so a ChangeSet saved from the GUI always deployed with the environment's default tool set
+
 ## 2026-10-27
 
 - feat: `list_mcp_servers` reports `tools_unavailable` on each deployment whose tools the gateway cannot offer: a credential it lacks (checked without calling the upstream, shared with `upstream_headers`) or the last failed upstream `tools/list` (exception type only). A server listed with no tools was previously explained only by a pod-log warning
