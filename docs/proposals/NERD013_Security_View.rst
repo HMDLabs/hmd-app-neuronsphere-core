@@ -14,9 +14,9 @@ NERD013 Security View
 ``repo_class_version_detail`` (``deployments/views.py``) renders sections built by
 ``build_repo_class_version_detail_sections`` in ``services/repo_class_detail.py``, from data fetched
 by ``DeploymentAPIClient`` over REST. The app has no storage access today. Scan results are
-published to the librarian's security route at ingest (``NERD0020_HMD_MS_DEPLOYMENT``) and are
-intentionally not part of the deployment service's data. The view therefore reads the small
-``summary.json`` directly from storage.
+delivered as sidecar items next to the build zip (``HMD_CLI_BUILD_NERD002``,
+``NERD0025_HMD_MS_DEPLOYMENT``) and are intentionally not part of the deployment service's data.
+The view therefore reads the small ``<repo>_<version>_security.json`` sidecar directly from storage.
 
 .. spec:: Security section on the version page
     :id: HMD_APP_NEURONSPHERE_NERD013_SPEC001
@@ -34,7 +34,8 @@ intentionally not part of the deployment service's data. The view therefore read
     :links: HMD_APP_NEURONSPHERE_NERD013
     :status: proposed
 
-    A function in ``services/`` reads ``security/<repo_name>/<repo_version>/summary.json`` from the
+    A function in ``services/`` reads the version's ``_security.json`` sidecar (path
+    ``<repo_name>/<repo_version>/<repo_name>_<repo_version>_security.json``) from the
     librarian bucket with boto3, using the session and bucket-from-environment pattern already used
     for storage reads elsewhere in the platform. Results are cached with the existing
     ``cache_key``/``cache_ttl`` mechanism. Storage credentials stay in the server; the browser never
@@ -45,7 +46,7 @@ intentionally not part of the deployment service's data. The view therefore read
     :links: HMD_APP_NEURONSPHERE_NERD013
     :status: proposed
 
-    A download action returns the version's ``sbom.cdx.json``, either as a short-lived presigned URL
+    A download action returns the version's ``_sbom.cdx.json.gz`` sidecar, either as a short-lived presigned URL
     or streamed by the view, after the same authorization check as the page. Downloading the
     vulnerability report is offered the same way.
 

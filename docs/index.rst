@@ -24,6 +24,7 @@ documented with the premium overlay, ``hmd-app-neuronsphere``.
    proposals/NERD012_MCP_Gateway
    proposals/NERD013_Security_View
    proposals/NERD014_Data_Product_Tools
+   proposals/NERD015_Docs_And_Scan_History_Views
    proposals/UIUX_Requirements
 
 
