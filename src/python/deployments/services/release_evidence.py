@@ -10,11 +10,14 @@ are derived only from the release version itself, so a publisher's and a
 customer's GUI show the same runs and the same signature for the same version,
 and every view marks them as demo data. Recorded evidence always wins.
 """
+
 import hashlib
 import json
 from typing import Dict, List, Optional
 
 from django.conf import settings
+
+from .release_detail import pinned_versions
 
 PROVEN_STATUSES = ("verified", "released")
 
@@ -56,7 +59,7 @@ def _pins(detail: Dict) -> List[Dict]:
                     "digest": artifact.get("digest"),
                 }
             )
-    for name, version in (detail.get("pins") or {}).items():
+    for name, version in pinned_versions(detail.get("pins")):
         if (name, version) not in seen:
             seen.add((name, version))
             rows.append({"repo_class_name": name, "version": version, "digest": None})

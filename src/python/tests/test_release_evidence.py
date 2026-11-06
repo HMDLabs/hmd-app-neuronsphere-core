@@ -5,6 +5,7 @@ appear only with ``RELEASE_DEMO_EVIDENCE`` on, are deterministic per release
 version (so a publisher and a customer GUI show the same thing), and are always
 marked as demo data.
 """
+
 import unittest
 from unittest import mock
 
@@ -79,6 +80,23 @@ class TestReleaseEvidence(unittest.TestCase):
         self.assertEqual(result["summary"]["failed"], 0)
         self.assertEqual(
             result["summary"]["passed"], sum(t["passed"] for t in result["tests"])
+        )
+
+    @override_settings(RELEASE_DEMO_EVIDENCE=True)
+    def test_demo_has_a_suite_per_version_of_a_platform_pin_listing_several(self):
+        platform = {
+            **RELEASED,
+            "pins": {"bucket": ["0.1.11", "0.1.14"]},
+            "artifacts": [],
+        }
+        suites = [t["suite"] for t in release_evidence(platform)["tests"]]
+        self.assertEqual(
+            suites,
+            [
+                "bucket 0.1.11 acceptance",
+                "bucket 0.1.14 acceptance",
+                "telemetry end-to-end",
+            ],
         )
 
     @override_settings(RELEASE_DEMO_EVIDENCE=True)

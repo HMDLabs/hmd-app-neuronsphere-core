@@ -4,13 +4,24 @@ A release shows its evidence the same way everywhere, and what it claims is
 never louder than what was proved: *verified* (a gated apply), *attested* (an
 operator's note) or *partly attested* (pins were carried forward).
 """
-from typing import Dict, List, Optional
+
+from typing import Dict, List, Optional, Tuple
 
 PROVEN_STATUSES = ("verified", "released")
 
 # Per-artifact statuses reported by the service's ``release_install_status``.
 PRESENT = "present"
 DIGEST_MISMATCH = "digest_mismatch"
+
+
+def pinned_versions(pins: Optional[Dict]) -> List[Tuple[str, str]]:
+    """``(repo class, version)`` for each pin. A platform release pins a class
+    deployed at several versions as a list of them; each gets its own pair."""
+    return [
+        (name, v)
+        for name, versions in (pins or {}).items()
+        for v in (versions if isinstance(versions, list) else [versions])
+    ]
 
 
 def carried_forward(release_version: Dict) -> List[Dict]:
@@ -39,9 +50,9 @@ def pin_rows(release_version: Dict) -> List[Dict]:
     Rows come from ``artifacts`` (one per pin, so a class pinned at several
     versions has a row each); a release without them falls back to ``pins``.
     """
+    pinned = pinned_versions(release_version.get("pins"))
     artifacts = release_version.get("artifacts") or [
-        {"repo_class_name": name, "version": version}
-        for name, version in (release_version.get("pins") or {}).items()
+        {"repo_class_name": name, "version": version} for name, version in pinned
     ]
     rows = [
         {
@@ -52,11 +63,10 @@ def pin_rows(release_version: Dict) -> List[Dict]:
         }
         for a in artifacts
     ]
-    pinned = release_version.get("pins") or {}
     known = {(r["repo_class_name"], r["version"]) for r in rows}
     rows += [
         {"repo_class_name": n, "version": v, "content_path": None, "digest": None}
-        for n, v in pinned.items()
+        for n, v in pinned
         if (n, v) not in known
     ]
     return sorted(rows, key=lambda r: (r["repo_class_name"] or "", r["version"] or ""))

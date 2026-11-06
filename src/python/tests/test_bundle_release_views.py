@@ -3,6 +3,7 @@
 Platform-wide reads: ``login_required`` only, nothing environment-scoped, nothing
 cached for releases, and no premium URL named anywhere in the core templates.
 """
+
 import unittest
 from unittest import mock
 
@@ -372,6 +373,15 @@ class TestReleaseViews(CatalogTestCase):
             ),
             body,
         )
+
+    def test_platform_release_pinning_a_class_at_several_versions_renders(self):
+        body = self._detail(
+            release_name="core",
+            pins={"hmd-inf-s3bucket": ["0.1.11", "0.1.14"]},
+            artifacts=[],
+        )
+        self.assertIn("0.1.11", body)
+        self.assertIn("0.1.14", body)
 
     def test_arriving_install_polls_until_installed(self):
         body = self._detail()

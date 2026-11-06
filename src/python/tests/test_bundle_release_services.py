@@ -3,6 +3,7 @@
 Pure functions, no Django: what a release claims must never be louder than what
 was proved, so the evidence level is tested exhaustively.
 """
+
 import unittest
 
 from deployments.services.bundle_detail import role_rows
@@ -167,6 +168,35 @@ class TestPinRows(unittest.TestCase):
         rows = pin_rows({"pins": {"a": "1.0.0"}, "artifacts": None})
         self.assertEqual(
             [(r["repo_class_name"], r["version"]) for r in rows], [("a", "1.0.0")]
+        )
+
+    def test_a_platform_pin_listing_several_versions_gives_a_row_each(self):
+        # A platform release pins a class deployed at several versions as a list.
+        rows = pin_rows({"pins": {"bucket": ["0.1.11", "0.1.14"], "a": "1.0"}})
+        self.assertEqual(
+            [(r["repo_class_name"], r["version"]) for r in rows],
+            [("a", "1.0"), ("bucket", "0.1.11"), ("bucket", "0.1.14")],
+        )
+
+    def test_listed_pins_matching_artifacts_are_not_repeated(self):
+        rv = {
+            "pins": {"bucket": ["0.1.11", "0.1.14"]},
+            "artifacts": [
+                {
+                    "repo_class_name": "bucket",
+                    "version": "0.1.11",
+                    "digest": "sha256:a",
+                },
+                {
+                    "repo_class_name": "bucket",
+                    "version": "0.1.14",
+                    "digest": "sha256:b",
+                },
+            ],
+        }
+        self.assertEqual(
+            [(r["version"], r["digest"]) for r in pin_rows(rv)],
+            [("0.1.11", "sha256:a"), ("0.1.14", "sha256:b")],
         )
 
 

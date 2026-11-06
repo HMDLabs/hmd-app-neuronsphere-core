@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-11-06
+
+- fix: A platform release that pins a repo class at several versions (`pins` maps it to a list) no longer returns 500 on its detail page. `pin_rows` and the demo evidence now give one row per pinned version instead of hashing the list
+
 ## 2026-10-28
 
 - fix: ChangeSet drafts keep an item's own `deploy_image` (the hmd-img-projectbuilder image it deploys with, hmd-lang-deployment 0.1.104+). `sanitize_changeset_item` dropped it, so a ChangeSet saved from the GUI always deployed with the environment's default tool set
