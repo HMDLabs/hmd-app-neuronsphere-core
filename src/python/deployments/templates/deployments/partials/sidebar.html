@@ -133,5 +133,16 @@
             </svg>
             <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Architecture</span>
         </a>
+        <!-- Views contributed by deployed services (NERD007) -->
+        <a href="{% url 'ns_service_views:index' %}"
+           class="flex items-center px-4 py-2.5 text-sm font-semibold transition-colors
+                  {% if active_section == 'services' %}bg-ns-medium text-ns-electric{% else %}hover:bg-ns-medium hover:text-ns-electric{% endif %}"
+           :title="!sidebarOpen ? 'Services' : ''">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+            </svg>
+            <span class="ml-3 whitespace-nowrap" x-show="sidebarOpen" x-transition>Services</span>
+        </a>
     </nav>
 </aside>

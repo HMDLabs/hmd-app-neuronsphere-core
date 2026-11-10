@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "django_htmx",
     # Local
     "deployments",
+    # Views that deployed services contribute (NERD007)
+    "ns_service_views",
 ]
 
 

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Services - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Services</h1>
+            <p class="text-gray-600 mt-1">Views contributed by the services deployed in {{ environment|default:"an environment" }}</p>
+        </div>
+        {% if environments %}
+        <form method="get" action="{% url 'ns_service_views:index' %}">
+            <label class="block text-xs text-gray-500 mb-1">Environment</label>
+            <select name="environment" onchange="this.form.submit()"
+                    class="border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-electric focus:border-ns-electric">
+                {% for env in environments %}
+                <option value="{{ env }}" {% if env == environment %}selected{% endif %}>{{ env }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if services %}
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {% for entry in services %}
+        <a href="{% url 'ns_service_views:service_detail' environment entry.service.instance %}"
+           class="block bg-white rounded-lg shadow-sm p-5 hover:ring-2 hover:ring-ns-electric">
+            <div class="flex items-baseline justify-between">
+                <h2 class="font-semibold text-gray-900">{{ entry.service.instance }}</h2>
+                <span class="text-xs text-gray-500">{{ entry.service.service }} {{ entry.service.version }}</span>
+            </div>
+            <ul class="mt-3 space-y-1 text-sm text-gray-700">
+                {% for view in entry.views %}<li>{{ view.title }}</li>{% endfor %}
+            </ul>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-sm p-6 text-gray-600">
+        No service in this environment publishes views you can open.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

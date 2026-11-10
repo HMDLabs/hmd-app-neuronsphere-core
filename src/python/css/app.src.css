@@ -2,6 +2,7 @@
 
 @source "../deployments/templates";
 @source "../templates";
+@source "../ns_service_views/templates";
 @source "../deployments/templatetags";
 @source "../deployments/static/deployments/js/bom_dag.js";
 @source "../deployments/static/deployments/js/architecture_graph.js";

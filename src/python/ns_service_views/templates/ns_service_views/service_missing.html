@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Service not found - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-sm p-6">
+    <h1 class="text-xl font-bold text-gray-900">No views from {{ instance }}</h1>
+    <p class="text-gray-600 mt-2">
+        {{ instance }} publishes no views in {{ environment }}, or is not deployed there.
+        <a href="{% url 'ns_service_views:service_list' environment %}" class="text-ns-electric hover:underline">All services in {{ environment }}</a>
+    </p>
+</div>
+{% endblock %}

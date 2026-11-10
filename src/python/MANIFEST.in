@@ -4,3 +4,4 @@
 # had no base.html and every page extending it raised TemplateDoesNotExist.
 recursive-include deployments/templates *
 recursive-include deployments/static *
+recursive-include ns_service_views/templates *

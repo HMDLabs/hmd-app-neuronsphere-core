@@ -39,6 +39,8 @@ def sidebar_context(request):
         active_section = "releases"
     elif path.startswith("/architecture"):
         active_section = "architecture"
+    elif path.startswith("/services"):
+        active_section = "services"
     else:
         active_section = ""
         # Sections an extra app contributes (settings.EXTENSION_SECTIONS).

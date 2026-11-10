@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.instance }} - Services - NeuronSphere{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div>
+        <a href="{% url 'ns_service_views:service_list' environment %}" class="text-sm text-ns-electric hover:underline">Services in {{ environment }}</a>
+        <h1 class="text-2xl font-bold text-gray-900 mt-1">{{ service.instance }}</h1>
+        <p class="text-gray-600">{{ service.service }} {{ service.version }}</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+        <nav class="lg:w-64 shrink-0 bg-white rounded-lg shadow-sm p-4 space-y-4" aria-label="Views">
+            {% for group, views in groups.items %}
+            <div>
+                <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ group }}</h2>
+                <ul class="mt-2 space-y-1">
+                    {% for view in views %}
+                    <li>
+                        <a href="?view={{ view.id }}"
+                           hx-get="{{ view.url }}" hx-target="#ns-service-view" hx-swap="innerHTML"
+                           hx-push-url="?view={{ view.id }}"
+                           title="{{ view.description }}"
+                           class="block rounded px-2 py-1 text-sm {% if view.id == initial.id %}bg-ns-medium text-ns-electric{% else %}text-gray-700 hover:bg-gray-100{% endif %}">{{ view.title }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-600">You can't open any of this service's views.</p>
+            {% endfor %}
+        </nav>
+
+        <section class="flex-1 min-w-0 bg-white rounded-lg shadow-sm p-4">
+            <div id="ns-service-view"
+                 {% if initial %}hx-get="{{ initial.url }}" hx-trigger="load" hx-swap="innerHTML"{% endif %}>
+                <p class="text-sm text-gray-500">{% if initial %}Loading…{% else %}Pick a view.{% endif %}</p>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -5,7 +5,7 @@ NERD007 Service View Browser and HTMX Partial Mounting
 
 .. req:: Service View Browser and HTMX Partial Mounting
     :id: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: in_progress
 
     Add a generic service browser to the NeuronSphere Django host that, for the currently
     selected environment, lists every deployed service-with-views (one selector query for the
@@ -41,7 +41,7 @@ Django project alongside the base.
 .. spec:: Service browser page and navigation
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC001
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     A new top-level navigation entry "Services" shall list, for the currently selected
     environment, every service instance that publishes a ``ui.neuronsphere.io/view-set``
@@ -52,19 +52,24 @@ Django project alongside the base.
 .. spec:: Mount container and partial loading
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC002
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     The host shell (``base.html``) shall expose a stable mount container
     ``<div id="ns-service-view">`` inside the existing ``{% block content %}`` for service
     browser pages. Selecting a view shall issue ``hx-get`` against a Django proxy URL of the
-    form ``/services/<env>/<instance>/views/<view_id>/`` with
-    ``hx-target="#ns-service-view"`` and ``hx-swap="innerHTML"``. The partial returned by the
-    microservice shall be rendered directly into the container.
+    form ``/services/<env>/<instance>/views/<rest>``, where ``/views/<rest>`` is the view's
+    declared ``path``, with ``hx-target="#ns-service-view"`` and ``hx-swap="innerHTML"``.
+    The partial returned by the microservice shall be rendered directly into the container.
+
+    The service's page lives at ``/services/<env>/<instance>/``. A partial's relative HTMX
+    URLs resolve against the page's address, not the proxy's, so a partial shall write its
+    links relative to the service root, for example ``hx-get="views/users?page=2"``. Those
+    resolve to the proxy route above.
 
 .. spec:: Django proxy endpoint
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC003
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     A Django view at ``/services/<env>/<instance>/views/<path:rest>/`` shall:
 
@@ -85,7 +90,7 @@ Django project alongside the base.
 .. spec:: Registry consumption and caching
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC004
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     The host shall read the env's view inventory exclusively from
     ``DeploymentAPIClient.find_resources_by_selector({"ui.neuronsphere.io/kind": "view-set"},
@@ -101,14 +106,19 @@ Django project alongside the base.
 .. spec:: Permission filtering
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC005
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     Before listing a view in the service browser, the host shall filter by the entry's
-    ``required_permissions``. It turns the user's groups into permissions with
-    ``hmd-lib-auth``'s ``permissions_for(groups, group_permissions)``, using the
-    ``group_permissions`` map from that service's view-set Resource. That is the same function
-    and the same map the service itself uses (``HMD_BASE_SERVICE_NERD003_SPEC010``), so the
-    menu never shows a view the service will refuse. Hidden entries shall
+    ``required_permissions``. It turns the user's groups (the IdP claims stored at sign-in)
+    into permissions with ``permissions_for(groups, group_permissions)``, using the
+    ``group_permissions`` map from that service's view-set Resource, the map the service
+    itself uses (``HMD_BASE_SERVICE_NERD003_SPEC010``). The host carries its own copy of
+    ``permissions_for`` rather than importing ``hmd-lib-auth``, because the GUI depends on no
+    hmd library. The copy is tested against the same cases as ``hmd-lib-auth``'s, so the two
+    resolve identically and the menu never shows a view the service will refuse. Filtering
+    applies only when users sign in through an IdP: without one (local development), services
+    skip their own check too, under ``AUTHORIZATION=NONE``. The setting
+    ``SERVICE_VIEWS_ENFORCE_PERMISSIONS`` overrides this. Hidden entries shall
     not appear in the menu, and the proxy endpoint shall also enforce the same check
     server-side as defense in depth (the microservice is the ultimate authority per
     ``HMD_BASE_SERVICE_NERD003_SPEC004``).
@@ -116,18 +126,21 @@ Django project alongside the base.
 .. spec:: Icon mapping and asset constraints
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC006
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: partial
 
     The host shall ship the curated icon set (heroicons or lucide) referenced by manifest
     ``icon`` names. Unknown icon names shall fall back to a default placeholder. Partials
     returned through the proxy must rely solely on host-loaded Tailwind, HTMX, and Alpine
-    assets; the host shall not inject any service-supplied ``<script>`` or ``<link>`` tags
-    even if present.
+    assets; the host shall remove any ``<script>``, ``<link>`` or ``<style>`` a service
+    returns before it reaches the browser.
+
+    Status: the asset rule is implemented. The icon set is not yet: views render without
+    icons.
 
 .. spec:: Error handling and observability
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC007
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: partial
 
     Proxy and registry interactions shall emit existing telemetry (correlation id, user,
     target service, latency, status). User-visible failure modes shall include: registry
@@ -136,13 +149,16 @@ Django project alongside the base.
     fragment that swaps cleanly into ``#ns-service-view`` without breaking the surrounding
     page.
 
+    Status: the error fragments are implemented. Telemetry is only warning logs so far:
+    correlation id, user, target service and latency are not yet emitted.
+
 Host Django App Architecture
 ----------------------------
 
 .. spec:: Base Django app ``ns_service_views``
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC008
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     A Django app named ``ns_service_views`` shall be the canonical implementation of the host
     responsibilities defined in SPEC001 through SPEC007. It shall own: the view-set discovery
@@ -232,7 +248,7 @@ Host Django App Architecture
 .. spec:: Default behavior with no extensions
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC013
     :links: HMD_APP_NEURONSPHERE_NERD007
-    :status: proposed
+    :status: implemented
 
     Installing ``ns_service_views`` alone, with no service-specific extension apps, shall
     yield the full generic browser and proxy experience described in SPEC001 through SPEC007.
