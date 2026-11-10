@@ -11,11 +11,11 @@ Polls only while something is still arriving: a settled report renders without a
     {% else %}
     <p class="text-sm">
         {% if arrival.state == "installed" %}
-        <span class="px-2 py-1 rounded bg-green-100 text-green-800 font-medium">Installed</span>
+        <span class="px-2 py-1 rounded-sm bg-green-100 text-green-800 font-medium">Installed</span>
         {% elif arrival.state == "blocked" %}
-        <span class="px-2 py-1 rounded bg-red-100 text-red-800 font-medium">Blocked</span>
+        <span class="px-2 py-1 rounded-sm bg-red-100 text-red-800 font-medium">Blocked</span>
         {% else %}
-        <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 font-medium">Arriving</span>
+        <span class="px-2 py-1 rounded-sm bg-blue-100 text-blue-800 font-medium">Arriving</span>
         {% endif %}
         <span class="ml-2 text-gray-600">{{ arrival.present }} of {{ arrival.total }} artifacts present</span>
     </p>

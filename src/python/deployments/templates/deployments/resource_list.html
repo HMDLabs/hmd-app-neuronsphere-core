@@ -11,7 +11,7 @@
     </div>
 
     <!-- Environment picker + optional tag filter (one form so both submit together) -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-4">
+    <div class="bg-white rounded-lg shadow-sm p-4 space-y-4">
         <form method="get" class="flex flex-wrap items-end gap-3">
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Environment</label>
@@ -55,7 +55,7 @@
     {% if environment and not error %}
     {% include "deployments/partials/resource_results.html" %}
     {% elif not environment %}
-    <div class="bg-white rounded-lg shadow px-6 py-12 text-center text-gray-500">
+    <div class="bg-white rounded-lg shadow-sm px-6 py-12 text-center text-gray-500">
         <p>Select an environment above to view its deployed resources.</p>
     </div>
     {% endif %}

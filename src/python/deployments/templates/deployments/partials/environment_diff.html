@@ -1,19 +1,19 @@
 {% load deployment_tags %}
 {% if not diff.only_in_source and not diff.only_in_target and not diff.modified %}
-<div class="bg-white rounded-lg shadow p-12 text-center">
+<div class="bg-white rounded-lg shadow-sm p-12 text-center">
     <p class="text-gray-500">No differences between {{ from_env }} and {{ to_env }}.</p>
 </div>
 {% else %}
-<div class="bg-white rounded-lg shadow">
+<div class="bg-white rounded-lg shadow-sm">
     <div class="px-6 py-3 bg-gray-50 border-b text-sm text-gray-600 flex flex-wrap gap-2 items-center">
         <span class="font-medium">Diff Summary ({{ from_env }} vs {{ to_env }}):</span>
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-green-100 text-green-800">
             {{ diff.only_in_source|length }} only in source
         </span>
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-red-100 text-red-800">
             {{ diff.only_in_target|length }} only in target
         </span>
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-amber-100 text-amber-800">
             {{ diff.modified|length }} modified
         </span>
     </div>
@@ -28,11 +28,11 @@
             <div class="px-6 py-3 flex items-center justify-between">
                 <label class="flex items-center space-x-3 cursor-pointer">
                     <input type="checkbox" name="selected" value="{{ item.repo_instance_name }}"
-                           class="rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta">
+                           class="rounded-sm border-gray-300 text-ns-magenta focus:ring-ns-magenta">
                     <span class="font-medium text-gray-900">{{ item.repo_instance_name }}</span>
                     <span class="text-sm text-gray-500">{{ item.repo_class_name }}</span>
                     {% if item.repo_class_version %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-mono bg-gray-100 text-gray-700">
                         v{{ item.repo_class_version }}
                     </span>
                     {% endif %}
@@ -70,8 +70,8 @@
                 <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
                     <label class="flex items-center space-x-3 cursor-pointer" @click.stop>
                         <input type="checkbox" name="selected" value="{{ m.repo_instance_name }}"
-                               class="rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                               class="rounded-sm border-gray-300 text-ns-magenta focus:ring-ns-magenta">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-amber-100 text-amber-800">
                             MODIFIED
                         </span>
                         <span class="font-medium text-gray-900">{{ m.repo_instance_name }}</span>
@@ -95,7 +95,7 @@
                     {% if m.config_diff %}
                     <div>
                         <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Configuration Changes</h4>
-                        <div class="bg-gray-50 rounded border text-xs font-mono">
+                        <div class="bg-gray-50 rounded-sm border text-xs font-mono">
                             {% for key, value in m.config_diff.added.items %}
                             <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
                                 <span class="text-green-800">+ {{ key }}</span>
@@ -127,7 +127,7 @@
                     {% if m.dependency_diff %}
                     <div>
                         <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Dependency Changes</h4>
-                        <div class="bg-gray-50 rounded border text-xs font-mono">
+                        <div class="bg-gray-50 rounded-sm border text-xs font-mono">
                             {% for role, target in m.dependency_diff.added.items %}
                             <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
                                 <span class="text-green-800">+ {{ role }}</span>

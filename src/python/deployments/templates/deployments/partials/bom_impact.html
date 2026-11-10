@@ -15,17 +15,17 @@
 <div class="px-6 py-3 bg-gray-50 border-b text-sm text-gray-600">
     <span class="font-medium">Impact Summary:</span>
     {% if summary.new %}
-    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2">
+    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-green-100 text-green-800 ml-2">
         {{ summary.new }} addition{{ summary.new|pluralize }}
     </span>
     {% endif %}
     {% if summary.modified %}
-    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ml-2">
+    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-amber-100 text-amber-800 ml-2">
         {{ summary.modified }} modification{{ summary.modified|pluralize }}
     </span>
     {% endif %}
     {% if summary.unchanged %}
-    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 ml-2">
+    <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-gray-100 text-gray-600 ml-2">
         {{ summary.unchanged }} unchanged
     </span>
     {% endif %}
@@ -40,15 +40,15 @@
             <div class="flex items-center space-x-3">
                 <!-- Change type badge -->
                 {% if impact.change_type == 'NEW' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-green-100 text-green-800">
                     NEW
                 </span>
                 {% elif impact.change_type == 'MODIFIED' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-amber-100 text-amber-800">
                     MODIFIED
                 </span>
                 {% else %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-gray-100 text-gray-600">
                     UNCHANGED
                 </span>
                 {% endif %}
@@ -84,7 +84,7 @@
             {% if impact.config_diff %}
             <div>
                 <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Configuration Changes</h4>
-                <div class="bg-gray-50 rounded border text-xs font-mono">
+                <div class="bg-gray-50 rounded-sm border text-xs font-mono">
                     {% for key, value in impact.config_diff.added.items %}
                     <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
                         <span class="text-green-800">+ {{ key }}</span>
@@ -119,7 +119,7 @@
             {% if impact.dependency_diff %}
             <div>
                 <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Dependency Changes</h4>
-                <div class="bg-gray-50 rounded border text-xs font-mono">
+                <div class="bg-gray-50 rounded-sm border text-xs font-mono">
                     {% for role, target in impact.dependency_diff.added.items %}
                     <div class="px-3 py-1.5 bg-green-50 border-l-2 border-green-400 flex justify-between">
                         <span class="text-green-800">+ {{ role }}</span>
@@ -154,7 +154,7 @@
             {% if impact.change_type == 'NEW' and impact.proposed.instance_configuration %}
             <div>
                 <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Configuration</h4>
-                <pre class="bg-gray-50 rounded border p-3 text-xs font-mono overflow-x-auto">{{ impact.proposed.instance_configuration|pprint }}</pre>
+                <pre class="bg-gray-50 rounded-sm border p-3 text-xs font-mono overflow-x-auto">{{ impact.proposed.instance_configuration|pprint }}</pre>
             </div>
             {% endif %}
         </div>

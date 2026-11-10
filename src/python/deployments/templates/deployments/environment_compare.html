@@ -18,7 +18,7 @@
 
     <!-- Selection Form -->
     <form method="get" action="{% url 'deployments:environment_compare' %}"
-          class="bg-white rounded-lg shadow p-6">
+          class="bg-white rounded-lg shadow-sm p-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1" for="from-env-select">Source Environment</label>
@@ -65,7 +65,7 @@
         {% include "deployments/partials/environment_diff.html" %}
 
         {% if diff.only_in_source or diff.modified %}
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">Generate ChangeSet from Selected</h2>
             <p class="text-sm text-gray-500 mb-4">
                 Selected items from {{ from_env }} are bundled into a new deployment-set-agnostic ChangeSet draft.
@@ -89,7 +89,7 @@
         {% endif %}
     </form>
     {% elif from_env and to_env and not error %}
-    <div class="bg-white rounded-lg shadow p-12 text-center">
+    <div class="bg-white rounded-lg shadow-sm p-12 text-center">
         <p class="text-gray-500">Environments {{ from_env }} and {{ to_env }} are identical.</p>
     </div>
     {% endif %}

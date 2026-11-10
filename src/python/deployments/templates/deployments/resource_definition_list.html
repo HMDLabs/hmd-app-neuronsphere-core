@@ -11,7 +11,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-4">
+    <div class="bg-white rounded-lg shadow-sm p-4">
         <form method="get" class="flex flex-wrap gap-3">
             <input type="text" name="namespace" value="{{ namespace }}"
                    placeholder="Namespace (e.g. kubernetes.neuronsphere.io)"
@@ -33,7 +33,7 @@
     {% endif %}
 
     <!-- Definition List -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         {% if definitions %}
         <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -78,11 +78,11 @@
             <div class="flex space-x-2">
                 {% if definitions.has_previous %}
                 <a href="?page={{ definitions.previous_page_number }}{% if namespace %}&namespace={{ namespace }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>
+                   class="px-3 py-1 border rounded-sm text-sm hover:bg-gray-50">Previous</a>
                 {% endif %}
                 {% if definitions.has_next %}
                 <a href="?page={{ definitions.next_page_number }}{% if namespace %}&namespace={{ namespace }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>
+                   class="px-3 py-1 border rounded-sm text-sm hover:bg-gray-50">Next</a>
                 {% endif %}
             </div>
         </div>

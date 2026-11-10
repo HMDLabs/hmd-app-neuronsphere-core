@@ -11,6 +11,7 @@ documented with the premium overlay, ``hmd-app-neuronsphere``.
    :caption: Contents:
 
    user_guide/index
+   building_the_stylesheet
    proposals/NERD001_Environment_BOM_View
    proposals/NERD002_ChangeSet_Creation
    proposals/NERD003_Deployment_History

@@ -76,13 +76,13 @@
             <button type="button"
                     hx-get="{% url 'deployments:capability_search' %}?q={{ q|urlencode }}&kind={{ kind|urlencode }}&page={{ page|add:'-1' }}"
                     hx-target="#capability-results"
-                    class="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
+                    class="px-3 py-1 border rounded-sm hover:bg-gray-50">Previous</button>
             {% endif %}
             {% if has_next %}
             <button type="button"
                     hx-get="{% url 'deployments:capability_search' %}?q={{ q|urlencode }}&kind={{ kind|urlencode }}&page={{ page|add:'1' }}"
                     hx-target="#capability-results"
-                    class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
+                    class="px-3 py-1 border rounded-sm hover:bg-gray-50">Next</button>
             {% endif %}
         </div>
     </div>

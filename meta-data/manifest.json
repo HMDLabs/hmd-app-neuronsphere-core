@@ -2,7 +2,19 @@
   "name": "hmd-app-neuronsphere-core",
   "description": "Core of the NeuronSphere deployment GUI: environments, BOMs, ChangeSet drafting and validation, repo classes, the resource catalogue and discovery -- everything that works against the registry-and-resolver core of the deployment service. The premium overlay (hmd-app-neuronsphere) layers run observability and apply on top of this image.",
   "build": {
+    "pre_build_artifacts": [
+      [
+        "hmd-config-tailwindcss-cli@0.1.2:configuration",
+        [
+          "src/python/css/bin"
+        ]
+      ]
+    ],
     "commands": [
+      [
+        "exec",
+        "./src/python/css/build.sh"
+      ],
       [
         "python"
       ],

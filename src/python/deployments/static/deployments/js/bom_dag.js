@@ -42,7 +42,7 @@
     };
 
     var DAG_DIR_BTN_BASE =
-        "w-7 h-7 flex items-center justify-center text-sm border rounded";
+        "w-7 h-7 flex items-center justify-center text-sm border rounded-sm";
     var DAG_DIR_BTN_ACTIVE = "bg-ns-magenta text-white border-ns-magenta";
     var DAG_DIR_BTN_INACTIVE =
         "border-gray-300 hover:bg-gray-50 text-gray-700";

@@ -44,18 +44,18 @@ which would match every open picker on the page at once.
         <button type="button"
                 hx-get="{% url 'deployments:api_repo_class_versions_options' %}?repo_class={{ repo_class|urlencode }}&amp;q={{ q|urlencode }}&amp;page={{ pagination.page|add:"-1" }}{% if item_index != None %}&amp;item_index={{ item_index }}{% endif %}"
                 hx-target="#{{ results_id }}" hx-swap="innerHTML"
-                class="px-2 py-1 border border-gray-300 rounded hover:bg-white">Prev</button>
+                class="px-2 py-1 border border-gray-300 rounded-sm hover:bg-white">Prev</button>
         {% else %}
-        <span class="px-2 py-1 border border-gray-200 rounded text-gray-300">Prev</span>
+        <span class="px-2 py-1 border border-gray-200 rounded-sm text-gray-300">Prev</span>
         {% endif %}
         <span class="text-gray-500">{{ pagination.page }}/{{ pagination.num_pages }}</span>
         {% if pagination.has_next %}
         <button type="button"
                 hx-get="{% url 'deployments:api_repo_class_versions_options' %}?repo_class={{ repo_class|urlencode }}&amp;q={{ q|urlencode }}&amp;page={{ pagination.page|add:"1" }}{% if item_index != None %}&amp;item_index={{ item_index }}{% endif %}"
                 hx-target="#{{ results_id }}" hx-swap="innerHTML"
-                class="px-2 py-1 border border-gray-300 rounded hover:bg-white">Next</button>
+                class="px-2 py-1 border border-gray-300 rounded-sm hover:bg-white">Next</button>
         {% else %}
-        <span class="px-2 py-1 border border-gray-200 rounded text-gray-300">Next</span>
+        <span class="px-2 py-1 border border-gray-200 rounded-sm text-gray-300">Next</span>
         {% endif %}
     </div>
 </div>

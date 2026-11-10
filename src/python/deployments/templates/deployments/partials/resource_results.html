@@ -1,6 +1,6 @@
 <!-- Resource search results (tag / selector). Fields beyond resource_name are
      optional — the raw find_resources_by_* endpoints omit definition/tags. -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow-sm overflow-hidden">
     {% if resources %}
     <ul class="divide-y divide-gray-200">
         {% for r in resources %}
@@ -16,7 +16,7 @@
             {% if r.tags %}
             <div class="mt-1 flex flex-wrap gap-1">
                 {% for t in r.tags %}
-                <span class="text-xs bg-gray-100 rounded px-2 py-0.5 font-mono">{{ t.key }}={{ t.value }}</span>
+                <span class="text-xs bg-gray-100 rounded-sm px-2 py-0.5 font-mono">{{ t.key }}={{ t.value }}</span>
                 {% endfor %}
             </div>
             {% endif %}

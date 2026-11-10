@@ -3,7 +3,7 @@
     {% for env in environments %}
     {% with status=env_statuses|get_item:env %}
     <a href="{% url 'deployments:bom_list' env %}"
-       class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-5 border-l-4 {{ env|env_border_color }}">
+       class="block bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow p-5 border-l-4 {{ env|env_border_color }}">
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900 capitalize">{{ env }}</h3>

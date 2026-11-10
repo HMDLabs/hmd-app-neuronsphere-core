@@ -1,7 +1,7 @@
 {% comment %}Tests and attestation behind a release version (NERD011 SPEC002). `release_evidence`
 comes from services/release_evidence.py; demo stand-ins are always marked as such.{% endcomment %}
 {% with ev=release_evidence %}
-<div class="bg-white rounded-lg shadow overflow-hidden" x-data="{ open: null }">
+<div class="bg-white rounded-lg shadow-sm overflow-hidden" x-data="{ open: null }">
     <div class="px-6 pt-6 pb-3 flex items-center justify-between gap-4">
         <h2 class="text-lg font-semibold text-gray-900">Tests</h2>
         <div class="flex items-center gap-2 text-sm">
@@ -11,7 +11,7 @@ comes from services/release_evidence.py; demo stand-ins are always marked as suc
             {% if ev.summary.skipped %}<span class="text-gray-500">{{ ev.summary.skipped }} not run</span>{% endif %}
             <span class="text-gray-400">across {{ ev.summary.suites }} suite{{ ev.summary.suites|pluralize }}</span>
             {% endif %}
-            {% if ev.demo %}<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs font-medium" title="Generated for a local demo: the service records no test runs for this version">Demo data</span>{% endif %}
+            {% if ev.demo %}<span class="px-2 py-0.5 rounded-sm bg-purple-100 text-purple-800 text-xs font-medium" title="Generated for a local demo: the service records no test runs for this version">Demo data</span>{% endif %}
         </div>
     </div>
     {% if ev.tests %}
@@ -31,9 +31,9 @@ comes from services/release_evidence.py; demo stand-ins are always marked as suc
             <tr class="cursor-pointer hover:bg-gray-50" @click="open = (open === {{ forloop.counter }} ? null : {{ forloop.counter }})">
                 <td class="px-6 py-3 font-mono text-gray-900">{% if t.cases %}<span class="text-gray-400 mr-1" x-text="open === {{ forloop.counter }} ? '&#9662;' : '&#9656;'">&#9656;</span>{% endif %}{{ t.suite }}</td>
                 <td class="px-6 py-3">
-                    {% if t.outcome == "passed" %}<span class="px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">passed</span>
-                    {% elif t.outcome == "failed" %}<span class="px-2 py-0.5 rounded bg-red-100 text-red-800 text-xs font-medium">failed</span>
-                    {% else %}<span class="px-2 py-0.5 rounded bg-gray-100 text-gray-600 text-xs">not run</span>{% endif %}
+                    {% if t.outcome == "passed" %}<span class="px-2 py-0.5 rounded-sm bg-green-100 text-green-800 text-xs font-medium">passed</span>
+                    {% elif t.outcome == "failed" %}<span class="px-2 py-0.5 rounded-sm bg-red-100 text-red-800 text-xs font-medium">failed</span>
+                    {% else %}<span class="px-2 py-0.5 rounded-sm bg-gray-100 text-gray-600 text-xs">not run</span>{% endif %}
                 </td>
                 <td class="px-6 py-3 text-gray-700">{{ t.passed|default:0 }}/{{ t.passed|add:t.failed|add:t.skipped }}</td>
                 <td class="px-6 py-3 font-mono text-gray-500">{{ t.environment|default:"-" }}</td>
@@ -59,18 +59,18 @@ comes from services/release_evidence.py; demo stand-ins are always marked as suc
     {% endif %}
 </div>
 
-<div class="bg-white rounded-lg shadow p-6">
+<div class="bg-white rounded-lg shadow-sm p-6">
     <div class="flex items-center justify-between gap-4 mb-3">
         <h2 class="text-lg font-semibold text-gray-900">Attestation</h2>
-        {% if ev.demo %}<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs font-medium" title="Generated for a local demo with a demo key; not a real signature">Demo data</span>{% endif %}
+        {% if ev.demo %}<span class="px-2 py-0.5 rounded-sm bg-purple-100 text-purple-800 text-xs font-medium" title="Generated for a local demo with a demo key; not a real signature">Demo data</span>{% endif %}
     </div>
     {% if ev.attestation %}
     {% with a=ev.attestation %}
     <div class="flex flex-wrap items-center gap-2 text-sm mb-4">
         {% if a.verification == "valid" %}
-        <span class="px-2 py-1 rounded bg-green-100 text-green-800 font-medium">Signature valid</span>
+        <span class="px-2 py-1 rounded-sm bg-green-100 text-green-800 font-medium">Signature valid</span>
         {% else %}
-        <span class="px-2 py-1 rounded bg-red-100 text-red-800 font-medium">Signature {{ a.verification|default:"unverified" }}</span>
+        <span class="px-2 py-1 rounded-sm bg-red-100 text-red-800 font-medium">Signature {{ a.verification|default:"unverified" }}</span>
         {% endif %}
         {% if a.predicate_type %}<span class="text-gray-500 font-mono text-xs">{{ a.predicate_type }}</span>{% endif %}
     </div>

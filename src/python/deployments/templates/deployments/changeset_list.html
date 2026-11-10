@@ -33,7 +33,7 @@
     {% endif %}
 
     <!-- Drafts List -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         {% if drafts %}
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -67,7 +67,7 @@
                 {% endif %}
                 {% endwith %}
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium
                             {% if draft.status == 'draft' %}bg-gray-100 text-gray-700
                             {% elif draft.status == 'in_review' %}bg-blue-100 text-blue-800
                             {% elif draft.status == 'accepted' %}bg-green-100 text-green-800

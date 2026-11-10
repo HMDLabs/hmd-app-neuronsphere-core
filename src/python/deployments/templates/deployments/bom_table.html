@@ -1,4 +1,4 @@
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow-sm overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
             <tr>
@@ -7,7 +7,7 @@
                     <input type="checkbox"
                            @click="selected = $event.target.checked ? Array.from(document.querySelectorAll('input.bom-row-check')).map(c => c.value) : []"
                            :checked="selected.length > 0"
-                           class="rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta"
+                           class="rounded-sm border-gray-300 text-ns-magenta focus:ring-ns-magenta"
                            title="Select all visible">
                 </th>
                 {% endif %}
@@ -82,7 +82,7 @@
                     <input type="checkbox"
                            value="{{ item.repo_instance_name }}"
                            x-model="selected"
-                           class="bom-row-check rounded border-gray-300 text-ns-magenta focus:ring-ns-magenta">
+                           class="bom-row-check rounded-sm border-gray-300 text-ns-magenta focus:ring-ns-magenta">
                 </td>
                 {% endif %}
                 <td class="px-6 py-4 whitespace-nowrap">

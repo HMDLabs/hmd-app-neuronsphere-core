@@ -28,3 +28,7 @@ DEPLOYMENT_API_URL = "http://deployment-api.invalid"
 # MCP_ENABLED / MCP_API_KEYS_ENABLED are deliberately NOT pinned here: they
 # default to True in base.py, and leaving them env-driven keeps the
 # MCP_ENABLED=false kill switch exercisable from the environment.
+
+# The precompiled stylesheet (css/build.sh) is not built for unit tests, and the
+# manifest storage refuses {% static %} for files it has not collected.
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"

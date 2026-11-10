@@ -24,7 +24,7 @@
     {% endif %}
 
     <!-- Version List -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         {% if versions %}
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -46,7 +46,7 @@
                         {% if version.default_configuration %}
                         <details>
                             <summary class="cursor-pointer text-ns-electric hover:underline">Show</summary>
-                            <pre class="mt-2 bg-gray-50 border border-gray-200 rounded p-3 text-xs overflow-x-auto">{{ version.default_configuration|pprint }}</pre>
+                            <pre class="mt-2 bg-gray-50 border border-gray-200 rounded-sm p-3 text-xs overflow-x-auto">{{ version.default_configuration|pprint }}</pre>
                         </details>
                         {% else %}
                         <span class="text-gray-400">-</span>

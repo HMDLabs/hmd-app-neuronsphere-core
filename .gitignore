@@ -146,3 +146,7 @@ docs/.auth.json
 # Local SQLite database created by `manage.py` with the development settings
 src/python/db.sqlite3
 .hmd-build-status.json
+
+# Precompiled Tailwind stylesheet and the CLI artifact (css/build.sh)
+/src/python/deployments/static/deployments/css/app.css
+/src/python/css/bin/

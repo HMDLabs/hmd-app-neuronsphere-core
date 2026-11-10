@@ -11,7 +11,7 @@
     </div>
 
     <!-- Search -->
-    <div class="bg-white rounded-lg shadow p-4">
+    <div class="bg-white rounded-lg shadow-sm p-4">
         <form method="get" class="flex space-x-3">
             <input type="text" name="search" value="{{ search }}"
                    placeholder="Search repo classes by name, type or summary..."
@@ -24,7 +24,7 @@
     </div>
 
     <!-- Find by capability (NERD004 SPEC005): what can do X, across every class -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
             <h2 class="text-lg font-medium text-gray-900">Find by capability</h2>
             <p class="text-sm text-gray-500 mt-1">Search what every repo class declares it can do &mdash; endpoints, CLI commands, functions, classes and operations from each class's latest manifest.</p>
@@ -63,7 +63,7 @@
     {% endif %}
 
     <!-- Repo Class List -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         {% if repo_classes %}
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -109,11 +109,11 @@
             <div class="flex space-x-2">
                 {% if repo_classes.has_previous %}
                 <a href="?page={{ repo_classes.previous_page_number }}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>
+                   class="px-3 py-1 border rounded-sm text-sm hover:bg-gray-50">Previous</a>
                 {% endif %}
                 {% if repo_classes.has_next %}
                 <a href="?page={{ repo_classes.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>
+                   class="px-3 py-1 border rounded-sm text-sm hover:bg-gray-50">Next</a>
                 {% endif %}
             </div>
         </div>

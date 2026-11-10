@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@source "../deployments/templates";
+@source "../templates";
+@source "../deployments/templatetags";
+@source "../deployments/static/deployments/js/bom_dag.js";
+@source "../deployments/static/deployments/js/architecture_graph.js";
+
+/* Plain theme block (not the inline variant) so values stay overridable at runtime. */
+@theme {
+  /* NeuronSphere brand (from neuronsphere.io) */
+  --color-ns-navy: #1a1a2e;
+  --color-ns-magenta: #A70B52;
+  --color-ns-dark: #0B0D2C;
+  --color-ns-mist: #F4F4F9;
+  --color-ns-electric: #3DBCD8;
+  --color-ns-lime: #E7F2BC;
+  --color-ns-lavender: #D4D0E2;
+  /* Neutral UI grays */
+  --color-ns-medium: #3A4046;
+  --color-ns-border: #D7DCDD;
+
+  --font-heading: Comfortaa, sans-serif;
+  --font-body: "Source Sans 3", sans-serif;
+}
+
+/* Tailwind v4 defaults borders to currentColor; v3 (the Play CDN) used gray-200. */
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}

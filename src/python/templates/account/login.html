@@ -19,7 +19,7 @@
             {% if form.errors %}
             <div class="rounded-md bg-red-100 border border-red-200 p-4 mb-6">
                 <div class="flex">
-                    <svg class="h-5 w-5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="h-5 w-5 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                     </svg>
                     <div class="ml-3">
@@ -79,7 +79,7 @@
                                value="{{ form.login.value|default:'' }}"
                                placeholder="Enter your username or email"
                                autofocus
-                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-magenta focus:border-ns-magenta focus:outline-none
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-magenta focus:border-ns-magenta focus:outline-hidden
                                       {% if form.login.errors %}border-red-300{% endif %}">
                         {% if form.login.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ form.login.errors.0 }}</p>
@@ -92,7 +92,7 @@
                         </label>
                         <input type="password" name="password" id="id_password"
                                placeholder="Enter your password"
-                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-magenta focus:border-ns-magenta focus:outline-none
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-ns-magenta focus:border-ns-magenta focus:outline-hidden
                                       {% if form.password.errors %}border-red-300{% endif %}">
                         {% if form.password.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
@@ -102,7 +102,7 @@
                     <div class="flex items-center">
                         <label class="flex items-center">
                             <input type="checkbox" name="remember" id="id_remember"
-                                   class="h-4 w-4 text-ns-magenta focus:ring-ns-magenta border-gray-300 rounded">
+                                   class="h-4 w-4 text-ns-magenta focus:ring-ns-magenta border-gray-300 rounded-sm">
                             <span class="ml-2 text-sm text-gray-600">Remember me</span>
                         </label>
                     </div>

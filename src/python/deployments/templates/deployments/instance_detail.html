@@ -19,7 +19,7 @@
     </div>
 
     {% if config_error %}
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <div class="bg-red-50 text-red-700 p-4 rounded-md">
             <p class="font-medium">Failed to load configuration</p>
             <p class="text-sm mt-1">{{ config_error }}</p>
@@ -28,7 +28,7 @@
     {% else %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Details -->
-        <div class="bg-white rounded-lg shadow">
+        <div class="bg-white rounded-lg shadow-sm">
             <div class="px-6 py-4 border-b">
                 <h2 class="text-lg font-medium text-gray-900">Details</h2>
             </div>
@@ -61,7 +61,7 @@
         </div>
 
         <!-- Deployment History -->
-        <div class="bg-white rounded-lg shadow">
+        <div class="bg-white rounded-lg shadow-sm">
             <div class="px-6 py-4 border-b">
                 <h2 class="text-lg font-medium text-gray-900">Deployment History</h2>
             </div>
@@ -95,7 +95,7 @@
     </div>
 
     <!-- Configuration -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
             <h2 class="text-lg font-medium text-gray-900">Configuration</h2>
             <p class="text-sm text-gray-500 mt-1">The full effective configuration <code>hmd deploy</code> uses (defaults merged with instance overrides).</p>
@@ -112,7 +112,7 @@
     </div>
 
     <!-- Dependencies -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
             <h2 class="text-lg font-medium text-gray-900">Dependencies</h2>
         </div>
@@ -126,7 +126,7 @@
                         <span class="font-mono text-sm text-gray-800">{{ row.role }}</span>
                         <p class="text-xs text-gray-500 truncate">{{ row.targets|join:", " }}</p>
                     </div>
-                    <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded border text-[10px] font-semibold {{ badge.classes }}"
+                    <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-sm border text-[10px] font-semibold {{ badge.classes }}"
                           title="{{ badge.label }}" aria-label="{{ badge.label }}">
                         {{ badge.letter }}
                     </span>
@@ -142,7 +142,7 @@
     {% endif %}
 
     <!-- Deployed Resources -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
             <h2 class="text-lg font-medium text-gray-900">Deployed Resources</h2>
             <p class="text-sm text-gray-500 mt-1">Resources produced by this instance's latest deployment</p>

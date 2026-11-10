@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,44 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}NeuronSphere Deployment GUI{% endblock %}</title>
 
-    <!-- Google Fonts: Comfortaa (headings/logo), Source Sans 3 (body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;0,900;1,300;1,400;1,600;1,700;1,900&display=swap" rel="stylesheet">
+    <!-- Comfortaa (headings/logo), Source Sans 3 (body): self-hosted, latin subset -->
+    <link rel="stylesheet" href="{% static 'deployments/css/fonts.css' %}">
 
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        // NeuronSphere brand (from neuronsphere.io)
-                        'ns-navy': '#1a1a2e',
-                        'ns-magenta': '#A70B52',
-                        'ns-dark': '#0B0D2C',
-                        'ns-mist': '#F4F4F9',
-                        'ns-electric': '#3DBCD8',
-                        'ns-lime': '#E7F2BC',
-                        'ns-lavender': '#D4D0E2',
-                        // Neutral UI grays
-                        'ns-medium': '#3A4046',
-                        'ns-border': '#D7DCDD',
-                    },
-                    fontFamily: {
-                        'heading': ['Comfortaa', 'sans-serif'],
-                        'body': ['Source Sans 3', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Tailwind CSS v4, precompiled at build time (css/build.sh) -->
+    <link rel="stylesheet" href="{% static 'deployments/css/app.css' %}">
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <!-- HTMX 2.0.0, vendored and pinned -->
+    <script src="{% static 'deployments/js/vendor/htmx.min.js' %}"></script>
 
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js 3.17.5, vendored and pinned -->
+    <script defer src="{% static 'deployments/js/vendor/alpine.min.js' %}"></script>
 
     <style>
         body {
@@ -96,7 +70,7 @@
     <div id="loading-bar"></div>
 
     <!-- Top Navigation -->
-    <nav class="bg-ns-navy shadow-lg flex-shrink-0">
+    <nav class="bg-ns-navy shadow-lg shrink-0">
         <div class="px-4">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -170,7 +144,7 @@
             </main>
 
             <!-- Footer -->
-            <footer class="bg-ns-dark border-t border-ns-medium mt-auto flex-shrink-0">
+            <footer class="bg-ns-dark border-t border-ns-medium mt-auto shrink-0">
                 <div class="px-6 py-4 text-center text-ns-lavender text-sm">
                     <span class="font-heading">
                         <span class="text-white">Neuron</span><span class="text-white">Sphere</span>

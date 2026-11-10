@@ -19,7 +19,7 @@
 
     {% if definition %}
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <h1 class="text-2xl font-bold text-gray-900 font-mono">{{ definition.resource_definition_name }}</h1>
         <div class="mt-2 flex flex-wrap gap-4 text-sm text-gray-500">
             <span>Namespace: <span class="font-mono text-gray-700">{{ definition.resource_namespace }}</span></span>
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Ancestry (isa chain, root-first) -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-3">Inheritance (isa)</h2>
         {% if ancestry_error %}
         <p class="text-sm text-yellow-700">Unable to load ancestry: {{ ancestry_error }}</p>
@@ -45,7 +45,7 @@
         <div class="flex flex-wrap items-center gap-2 text-sm">
             {% for anc in ancestry %}
             <a href="{% url 'deployments:resource_definition_detail' anc.identifier %}"
-               class="font-mono px-2 py-1 rounded {% if anc.identifier == definition.identifier %}bg-ns-navy text-ns-lavender{% else %}bg-gray-100 text-ns-electric hover:underline{% endif %}">
+               class="font-mono px-2 py-1 rounded-sm {% if anc.identifier == definition.identifier %}bg-ns-navy text-ns-lavender{% else %}bg-gray-100 text-ns-electric hover:underline{% endif %}">
                 {{ anc.resource_namespace }}/{{ anc.resource_definition_name }}
             </a>
             {% if not forloop.last %}<span class="text-gray-400">&rarr;</span>{% endif %}
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Effective output schema -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-3">Effective Output Schema</h2>
         <p class="text-xs text-gray-500 mb-2">The definition's own schema merged with its inherited ancestors'.</p>
         {% if schema_error %}
@@ -70,7 +70,7 @@
     </div>
 
     <!-- Producers -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold text-gray-900">Producers</h2>
             <div class="text-xs">
@@ -99,7 +99,7 @@
         {% endif %}
     </div>
     {% elif not definition_error %}
-    <div class="bg-white rounded-lg shadow p-6 text-gray-500">
+    <div class="bg-white rounded-lg shadow-sm p-6 text-gray-500">
         Resource definition <span class="font-mono">{{ rd_id }}</span> not found.
     </div>
     {% endif %}

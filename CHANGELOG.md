@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-11-10
+
+- feat: The GUI serves a Tailwind v4 stylesheet precompiled at build time (`css/build.sh`, CLI from the `hmd-config-tailwindcss-cli` artifact) instead of the in-browser Tailwind Play CDN, and vendors pinned copies of HTMX 2.0.0, Alpine.js 3.17.5 (was floating `3.x.x`), dagre, Cytoscape.js, cytoscape-dagre and the Comfortaa/Source Sans 3 fonts instead of loading them from unpkg, jsDelivr and Google Fonts. Utilities renamed in v4 (`rounded`, `shadow`, `outline-none`, `flex-shrink-0`, `bg-opacity-*`) were updated to keep the existing look
+
 ## 2026-11-06
 
 - fix: A platform release that pins a repo class at several versions (`pins` maps it to a list) no longer returns 500 on its detail page. `pin_rows` and the demo evidence now give one row per pinned version instead of hashing the list
