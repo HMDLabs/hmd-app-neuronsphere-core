@@ -8,9 +8,10 @@ NERD007 Service View Browser and HTMX Partial Mounting
     :status: proposed
 
     Add a generic service browser to the NeuronSphere Django host that, for the currently
-    selected environment, lists every deployed service-with-views (read in a single call from
-    the registry in ``NERD0003_HMD_MS_DEPLOYMENT``), surfaces the views each service
-    registers (per ``HMD_BASE_SERVICE_NERD003``), fetches those views through a Django proxy
+    selected environment, lists every deployed service-with-views (one selector query for the
+    environment's ``ui.neuronsphere.io/view-set`` Resources, per ``NERD0003_HMD_MS_DEPLOYMENT``),
+    surfaces the views each service declares (per ``HMD_BASE_SERVICE_NERD003``), fetches those
+    views through a Django proxy
     that forwards the user's bearer token, and mounts them in the host shell.
 
     The host integration shall be provided by a dedicated base Django app, ``ns_service_views``,
@@ -26,6 +27,12 @@ The Django app today is wired specifically to ``hmd-ms-deployment``; new operato
 host-app changes. This NERD introduces a consumer-side contract that completes the trio with
 ``HMD_BASE_SERVICE_NERD003`` and ``NERD0003_HMD_MS_DEPLOYMENT``: read the env's view inventory
 from one place, render a service browser, and mount selected partials via a same-origin proxy.
+
+Revision 2026-11-10: the view inventory is now the environment's ``view-set`` Resources, not a
+registry read through ``views_for_env``. Discovery mirrors the MCP gateway (``NERD012``),
+which already finds ``mcp-server`` Resources in each environment with
+``find_resources_by_selector``. ``ns_service_views`` should share that discovery code rather
+than grow a second copy.
 The consumer-side contract is implemented by the ``ns_service_views`` base Django app; any
 host-side workflow logic that genuinely belongs on the host (for example, orchestration across
 multiple microservice endpoints) lives in a service-specific extension app installed in this
@@ -37,8 +44,8 @@ Django project alongside the base.
     :status: proposed
 
     A new top-level navigation entry "Services" shall list, for the currently selected
-    environment, every service instance returned by the registry's
-    ``GET /apiop/views_for_env/<env>`` endpoint. Selecting a service shall reveal that
+    environment, every service instance that publishes a ``ui.neuronsphere.io/view-set``
+    Resource there (SPEC004). Selecting a service shall reveal that
     service's registered views grouped by their ``group`` field and sorted by ``order``, then
     by ``title``. Each view entry shall display its ``title``, ``description``, and ``icon``.
 
@@ -61,8 +68,9 @@ Django project alongside the base.
 
     A Django view at ``/services/<env>/<instance>/views/<path:rest>/`` shall:
 
-    1. Resolve the service instance's base URL from ``hmd-ms-deployment`` (reuse
-       ``DeploymentAPIClient`` and ``EnvironmentServiceConfig``).
+    1. Resolve the service instance's base URL from the ``base_url`` in its ``view-set``
+       Resource output (SPEC004). Refuse any ``<instance>`` or view path that the cached
+       inventory doesn't list, so the proxy can't be pointed at an arbitrary service.
     2. Forward the request method, query string, and body to ``<base>/<rest>/``.
     3. Forward the *user's* Okta bearer token (not the Django service-account token) in the
        ``Authorization`` header so the microservice can authenticate the end user directly.
@@ -80,8 +88,12 @@ Django project alongside the base.
     :status: proposed
 
     The host shall read the env's view inventory exclusively from
-    ``GET /apiop/views_for_env/<env>`` on ``hmd-ms-deployment``. The host shall not enumerate
-    the BOM and shall not call ``/views/manifest`` directly on individual instances.
+    ``DeploymentAPIClient.find_resources_by_selector({"ui.neuronsphere.io/kind": "view-set"},
+    environment=<env>)``, decoding each Resource's output as the MCP gateway does
+    (``deployments.services.resource_query.decode_resource_output``). The host shall not
+    enumerate the BOM and shall not call ``/views/manifest`` on individual instances. That
+    endpoint is for debugging only. Malformed outputs shall be skipped with a warning, as the
+    gateway skips a malformed ``mcp-server``, so one bad service can't break the browser.
     Responses shall be cached in Django's cache keyed by ``env`` with a TTL of 5 minutes by
     default. The cache shall be invalidated for an env whenever a deploy event for any
     instance in that env is received (per ``NERD0003_HMD_MS_DEPLOYMENT_SPEC0005``).
@@ -92,7 +104,11 @@ Django project alongside the base.
     :status: proposed
 
     Before listing a view in the service browser, the host shall filter by the entry's
-    ``required_permissions`` against the user's resolved Okta groups. Hidden entries shall
+    ``required_permissions``. It turns the user's groups into permissions with
+    ``hmd-lib-auth``'s ``permissions_for(groups, group_permissions)``, using the
+    ``group_permissions`` map from that service's view-set Resource. That is the same function
+    and the same map the service itself uses (``HMD_BASE_SERVICE_NERD003_SPEC010``), so the
+    menu never shows a view the service will refuse. Hidden entries shall
     not appear in the menu, and the proxy endpoint shall also enforce the same check
     server-side as defense in depth (the microservice is the ultimate authority per
     ``HMD_BASE_SERVICE_NERD003_SPEC004``).
@@ -129,8 +145,8 @@ Host Django App Architecture
     :status: proposed
 
     A Django app named ``ns_service_views`` shall be the canonical implementation of the host
-    responsibilities defined in SPEC001 through SPEC007. It shall own: the registry client and
-    its 5-minute cache (per SPEC004), the proxy endpoint (per SPEC003), the service browser
+    responsibilities defined in SPEC001 through SPEC007. It shall own: the view-set discovery
+    client and its 5-minute cache (per SPEC004), the proxy endpoint (per SPEC003), the service browser
     pages and ``<div id="ns-service-view">`` mount-container scaffolding (per SPEC001 and
     SPEC002), the curated icon set (per SPEC006), the host-side permission filter (per
     SPEC005), and the telemetry and error fragments (per SPEC007).
@@ -223,3 +239,17 @@ Host Django App Architecture
     Adding or removing an extension app shall not require any change to the base app and
     shall not regress non-extended services. Bare microservices that contribute only a
     ``/views/manifest`` and partials shall remain first-class consumers of the base app.
+
+.. spec:: Reaching services in other accounts (reserved)
+    :id: HMD_APP_NEURONSPHERE_NERD007_SPEC014
+    :links: HMD_APP_NEURONSPHERE_NERD007, HMD_APP_NEURONSPHERE_NERD007_SPEC003
+    :status: future
+
+    Discovery already works across environments, because view-set Resources are scoped to
+    the environment their service is deployed in, wherever that is. Reaching those services
+    does not. A control-plane host proxying to a ``base_url`` in a pipeline account needs a
+    network path to that account's ApiGateway, and that account's authorizer has to trust
+    the host's audience for the user's forwarded token. Until a later revision specifies
+    both, the proxy shall serve only view-sets whose ``base_url`` it can reach. It shall list
+    any other view-set in the browser as unavailable, with the reason, and never fail the
+    whole page. Control-plane services, ``hmd-ms-identity`` among them, are unaffected.
