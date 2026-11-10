@@ -3,6 +3,8 @@
 @source "../deployments/templates";
 @source "../templates";
 @source "../ns_service_views/templates";
+/* Classes services may use in their partials, which this build cannot see (NERD007 SPEC006). */
+@source "./partial-classes.txt";
 @source "../deployments/templatetags";
 @source "../deployments/static/deployments/js/bom_dag.js";
 @source "../deployments/static/deployments/js/architecture_graph.js";

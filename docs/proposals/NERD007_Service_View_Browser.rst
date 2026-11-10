@@ -134,8 +134,15 @@ Django project alongside the base.
     assets; the host shall remove any ``<script>``, ``<link>`` or ``<style>`` a service
     returns before it reaches the browser.
 
-    Status: the asset rule is implemented. The icon set is not yet: views render without
-    icons.
+    The host's stylesheet is precompiled, and the build can't see templates in other repos.
+    So partials may use only a **fixed set of Tailwind classes**, listed one per line in
+    ``src/python/css/partial-classes.txt``. The build sources that file, so every listed
+    class exists in the stylesheet. ``hmd-base-service`` ships an identical copy and warns
+    about any other class a partial uses, without disabling the view. Adding a class means
+    changing both copies and releasing the GUI first.
+
+    Status: the asset rule and the fixed class set are implemented. The icon set is not
+    yet: views render without icons.
 
 .. spec:: Error handling and observability
     :id: HMD_APP_NEURONSPHERE_NERD007_SPEC007
