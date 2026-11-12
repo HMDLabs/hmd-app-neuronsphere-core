@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-11-12
+
+- feat: a release version's test suites show the ChangeSetDeployment that ran them and the archived Bender results path, as recorded by hmd-ms-deployment's `attach_release_evidence` (NERD0016 SPEC0033)
+
 ## 2026-11-10
 
 - feat: a fixed set of Tailwind classes for service partials. `css/partial-classes.txt` lists them (one per line), and the stylesheet build sources it, so a class a service's partial uses from the list is styled even though the precompiled build cannot see that service's templates. hmd-base-service carries an identical copy and warns about anything else (NERD007 SPEC006)

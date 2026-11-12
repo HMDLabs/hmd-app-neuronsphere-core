@@ -174,3 +174,29 @@ class TestReleaseDetailShowsEvidence(unittest.TestCase):
         self.assertNotIn("telemetry end-to-end", body)
         self.assertIn("No test runs recorded", body)
         self.assertIn("Not signed", body)
+
+    @override_settings(RELEASE_DEMO_EVIDENCE=False)
+    def test_attached_gate_evidence_shows_its_run_and_results_archive(self):
+        from tests.test_bundle_release_views import FakeResponse
+
+        detail = dict(RELEASED)
+        detail["evidence"] = {
+            "tests": [
+                {
+                    "suite": "device-librarian",
+                    "outcome": "passed",
+                    "environment": "dev",
+                    "passed": 86,
+                    "failed": 0,
+                    "skipped": 0,
+                    "change_set_deployment": "ms-deployment-admin-reg1-hmdtr1-1",
+                    "results_path": "deploy:/dev/2026-11-12/bender_results_x.zip",
+                }
+            ]
+        }
+        self.fake.responses["get_release_version"] = FakeResponse(detail)
+        body = self.client.get(self.url).content.decode()
+        self.assertIn("device-librarian", body)
+        self.assertIn("deploy:/dev/2026-11-12/bender_results_x.zip", body)
+        self.assertIn("ms-deployment-admin-reg1-hmdtr1-1", body)
+        self.assertNotIn("Demo data", body)

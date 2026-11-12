@@ -29,7 +29,10 @@ comes from services/release_evidence.py; demo stand-ins are always marked as suc
         <tbody class="bg-white divide-y divide-gray-200">
             {% for t in ev.tests %}
             <tr class="cursor-pointer hover:bg-gray-50" @click="open = (open === {{ forloop.counter }} ? null : {{ forloop.counter }})">
-                <td class="px-6 py-3 font-mono text-gray-900">{% if t.cases %}<span class="text-gray-400 mr-1" x-text="open === {{ forloop.counter }} ? '&#9662;' : '&#9656;'">&#9656;</span>{% endif %}{{ t.suite }}</td>
+                <td class="px-6 py-3 font-mono text-gray-900">{% if t.cases %}<span class="text-gray-400 mr-1" x-text="open === {{ forloop.counter }} ? '&#9662;' : '&#9656;'">&#9656;</span>{% endif %}{{ t.suite }}
+                    {% if t.change_set_deployment %}<div class="text-xs text-gray-500 break-all" title="ChangeSetDeployment that ran this suite">{{ t.change_set_deployment }}</div>{% endif %}
+                    {% if t.results_path %}<div class="text-xs text-gray-500 break-all" title="Archived Bender results in the Artifact Librarian">{{ t.results_path }}</div>{% endif %}
+                </td>
                 <td class="px-6 py-3">
                     {% if t.outcome == "passed" %}<span class="px-2 py-0.5 rounded-sm bg-green-100 text-green-800 text-xs font-medium">passed</span>
                     {% elif t.outcome == "failed" %}<span class="px-2 py-0.5 rounded-sm bg-red-100 text-red-800 text-xs font-medium">failed</span>
