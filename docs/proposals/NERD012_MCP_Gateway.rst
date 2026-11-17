@@ -254,6 +254,14 @@ Two ideas were taken from the survey:
     as valid at prod as at dev. Use ``passthrough`` only for upstreams that enforce their
     own per-user authorization.
 
+    *Amendment (``HMD_APP_NEURONSPHERE_NERD017``).* "Every environment shares one IdP
+    tenant, so every user's own token also verifies" describes trust, and does not mean a
+    person may use every environment. A ``passthrough`` upstream is safe only because the
+    environment that owns it enforces access from the person's roles in that environment,
+    and the registry accepts the setting only for such upstreams. The gateway's own check
+    reads those roles from identity and not from ``UserEnvironmentPermission``. This
+    amendment does not change the status of this specification.
+
 Out of scope here, and next:
 
 - a verifying proxy (sidecar) for third-party upstreams, packaged once and reused by
